@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Claude Code local state
+.claude/
+CLAUDE.local.md
+
+# Environment / secrets
+.env
+.env.*
+
+# Logs and OS artifacts
+*.log
+Thumbs.db
