@@ -6,6 +6,22 @@ The roster is a forcing function: if you can't answer the four questions (job, i
 
 This is a starting point. After running the pipeline through a few real features, revisit the roster. Some agents will turn out to have substantial role overlap; collapse them. Some single agents will turn out to be doing two different jobs poorly; split them.
 
+## A note on the Facilitator
+
+The seven roles below are the framework's *worker* roles — they produce the artifacts (specs, tickets, tests, code, reports) the framework runs on. As of framework v0.2.0, there is an eighth meta-role, the **Facilitator**, defined in `FACILITATOR.md`.
+
+The Facilitator is not a member of this roster. It does not produce any of the framework's artifacts. Its job is to *orchestrate* the seven worker roles: track project state, prepare invocation prompts, spawn each role as a subagent in fresh context, capture structured outputs, surface human gates, and maintain the audit trail.
+
+In practice this means:
+
+- When you (the human) work on a project, you primarily interact with the Facilitator. The Facilitator interacts with the worker roles.
+- The worker roles remain unchanged from earlier framework versions. Their responsibilities, boundaries, and outputs are defined here, not in `FACILITATOR.md`.
+- Each worker role's prompt template now includes a **structured output section** (YAML) that the Facilitator parses. The structured output is in addition to, not a replacement for, the prose deliverables.
+- A worker role can still be invoked manually (paste the prompt into a fresh Claude Code session) for cases where the Facilitator is unavailable or unhelpful. The structured output section is harmless when read by humans.
+
+The Facilitator does not change *what* the worker roles do. It changes *who keeps track of which one runs when*. Read on for the seven worker roles.
+
+
 ---
 
 ## How to read each entry
@@ -122,7 +138,7 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 
 ## 4. SWE
 
-**Job:** Implement the tasks from the PM's plan such that the Test Author's tests pass, without modifying those tests.
+**Job:** Implement the tasks from the PM's plan such that the Test Author's tests pass, without modifying those tests. SWE may use gh issue comment to annotate existing tickets with observations relevant to that ticket's future work. SWE may not use gh issue create; new follow-up work surfaces via the PR description and requires human review before becoming a tracked item.
 
 **Inputs:**
 - The approved feature spec (for context).
