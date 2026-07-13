@@ -4,6 +4,16 @@ All notable changes to the spec-driven-build framework are documented here. The 
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Phase-slicing + end-to-end "done" principle** (`SPEC_DRIVEN_BUILD_FRAMEWORK.md`: the Phase-plan bullet and the Done Definition prose). Phases must be sliced as end-to-end vertical feature slices, not horizontal layers; and a phase is not "done" until a human has exercised its new capability end-to-end through its user-facing surface — the UI in a local/Codespace run, or a scripted CLI/API session when there is deliberately no UI — against a real boot of the stack, not merely until the unit/contract suites are green. The Done Definition now mandates at least one human-run, whole-stack acceptance criterion as a first-class blocking gate.
+
+### Design rationale
+Across three real phases the same defect class recurred and only ever surfaced at the human evidence run, never in the agent suites: missing CORS, unwired cross-origin API base URLs, cookie `SameSite`, compose/env boot-coherence, and streaming/SSE wiring. Agent tests inject env directly and mock the network, so "all behavioral-contract tests pass" repeatedly did not mean "the feature works when a person uses it," and the gaps became after-the-fact remediation loops fired *after* a phase review had already passed. Making the end-to-end, user-exercisable slice the *purpose* of a phase — rather than a nice-to-have a phase can declare "separable" and drop — forces the scope to include the surface that makes the feature real and promotes the human end-to-end gate from an optional evidence item to a blocking part of Done.
+
+---
+
 ## [0.2.0] — 2026-05-19
 
 The Facilitator release. Introduces orchestrator role plus structured agent outputs.
@@ -20,7 +30,7 @@ The Facilitator release. Introduces orchestrator role plus structured agent outp
 - `AGENT_ROSTER.md` opens with a note explaining how the Facilitator wraps the existing roster (the seven worker roles are unchanged).
 
 ### Design rationale
-The Facilitator emerged from real friction during the Trade Trainer pilot: the framework worked, but operating it required holding ten conventions in your head, and async work between sessions required a refresher each time. The Facilitator makes the framework portable in a real way — drop a `CLAUDE.md` into a new project, start a session, paste the bootstrap, and the framework knows what to do.
+The Facilitator emerged from real friction during the first pilot project: the framework worked, but operating it required holding ten conventions in your head, and async work between sessions required a refresher each time. The Facilitator makes the framework portable in a real way — drop a `CLAUDE.md` into a new project, start a session, paste the bootstrap, and the framework knows what to do.
 
 Two design decisions worth naming explicitly:
 1. **Level 3 orchestration with structured outputs.** All seven worker roles spawn as subagents (not just the fresh-context-required ones). The Facilitator's main defense against drift is that it quotes parseable fields verbatim rather than paraphrasing freeform output.
@@ -38,7 +48,7 @@ Projects mid-phase under 0.1.x can continue with the manual workflow — none of
 
 ## [0.1.1] — 2026-05-19
 
-Mid-pilot iteration. Captured prompt templates derived from the Trade Trainer pilot's first agent invocations, plus the first framework refinement surfaced by the pilot.
+Mid-pilot iteration. Captured prompt templates derived from the pilot project's first agent invocations, plus the first framework refinement surfaced by the pilot.
 
 ### Added
 - `prompts/spec_author.md`, `prompts/pm.md`, `prompts/test_author.md`, `prompts/swe.md`, `prompts/tester.md`, `prompts/pr_reviewer.md`, `prompts/phase_reviewer.md` — invocation prompt templates derived from the prompts that worked during Phase 1 of the pilot.
