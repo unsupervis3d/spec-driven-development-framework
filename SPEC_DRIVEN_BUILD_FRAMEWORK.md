@@ -62,7 +62,7 @@ Every project produces exactly four kinds of documents.
 - Product definition: what is this thing, what it is NOT.
 - Architecture: the stack, the major components, the data flow at 30,000 feet.
 - **Hard constraints:** decisions that are non-negotiable. These are the things the reviewer will use as auto-fail criteria. Examples from real projects: "no backend code execution," "no LLM provider abstraction," "no gamification UI," "all secrets via env vars never literals."
-- Phase plan: ordered list of phases with a one-paragraph description of each.
+- Phase plan: ordered list of phases with a one-paragraph description of each. **Slice phases as end-to-end vertical features, not horizontal layers** — each phase's purpose is to *fully complete* a feature slice through its user-facing surface (the UI, or the CLI/API when there is deliberately no UI), so a human can exercise the phase's new capability by hand in a local or Codespace run at phase end. A phase that ships a layer without the surface that makes it usable (a backend with no way to drive it, or a screen with no working backend) has produced scaffolding, not a done feature — see the Done Definition.
 - Open questions: things deliberately deferred.
 
 **Length:** 5-15 pages. Big enough to ground the project; small enough to read in full at the start of every Claude Code session.
@@ -121,6 +121,10 @@ Every project produces exactly four kinds of documents.
 - Tied to one specific spec section.
 
 If you can't write an AC that's mechanically checkable, the spec section is too vague — rewrite it.
+
+**A phase is not "done" until its feature slice has been exercised end-to-end through its user-facing surface by a human — in a local or Codespace run — not merely until its unit and contract suites are green.** Every phase's Done Definition MUST include at least one human-run acceptance criterion that drives the phase's new capability the way a real user would (click through the UI; or run the CLI / hit the API when there is deliberately no UI) against a real boot of the whole stack. This is a first-class, blocking gate, sized to the phase (a full click-through for a UI phase; a scripted CLI/API session for a headless one). It exists because the boot / browser / cross-origin / config-coherence layer is structurally invisible to agent test suites — they inject env directly and mock the network — so "all behavioral-contract tests pass" has repeatedly NOT meant "the feature works when a person uses it" (CORS, cross-origin API base URLs, cookie SameSite, compose/env boot coherence, and streaming/SSE wiring are the recurring escapees). Plan each phase's scope so there is a coherent end-to-end slice to exercise; do not defer the user-facing surface to a later phase and call the current one complete.
+
+The same principle applies one level down, at ticket/PR granularity, wherever a phase is built through the Facilitator's per-ticket pipeline (framework v0.2.0+): see `AGENT_ROSTER.md` (PM, SWE, PR Reviewer) and `HUMAN_GATES.md` (Gate 2) for how an individual PR is held to the same no-dead-ends, human-testable standard before it merges.
 
 **Length:** 10-50 pages depending on phase complexity. Foundational phases (data model, agent infrastructure) get more pages. Polish phases get fewer.
 
