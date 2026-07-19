@@ -47,6 +47,12 @@ EXPECTED_FILES = {
         "Facilitator",
     ],
     "SPEC_DRIVEN_BUILD_FRAMEWORK.md": [],
+    "HUMAN_GATES.md": [
+        "## The three gates",
+    ],
+    "LICENSE": [
+        "MIT License",
+    ],
     "AGENT_ROSTER.md": [
         "A note on the Facilitator",  # from the addendum
     ],
@@ -62,6 +68,13 @@ EXPECTED_FILES = {
     "templates/CLAUDE.md": [
         "spec-driven-build framework",
         "facilitator_bootstrap.md",
+    ],
+    "templates/PROJECT_OVERVIEW.md": [
+        "PROJECT_OVERVIEW",
+        "Hard constraints",
+    ],
+    "templates/RETRO.md": [
+        "Retro Notes",
     ],
     "templates/facilitator_bootstrap.md": [
         "You are the Facilitator",

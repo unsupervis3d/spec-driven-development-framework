@@ -13,7 +13,7 @@ Read `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `AGENT_ROSTER.md`, the ticket (`gh issu
 Specifically:
 
 1. **AC-by-AC verification.** For each acceptance criterion, identify which lines of the PR satisfy it. If you cannot point at specific code, flag it.
-2. **End-to-end spot-check.** Verify at least one behavior outside the test suite — actually run the code and observe output. Tests can be wrong; end-to-end is harder to fake.
+2. **End-to-end spot-check.** Verify at least one behavior outside the test suite — actually run the code and observe output. Tests can be wrong; end-to-end is harder to fake. While you're in the running app, watch for dead ends: a control that renders but doesn't actually work (wired to an endpoint that doesn't exist, a flag nothing turns on). Flag any you find — you're the first agent to actually run the app, so this is the cheapest place to catch them.
 3. **PR-vs-diff check.** Does what was delivered match what's claimed in the PR description?
 4. **Ticket-compliance gaps the tests might miss.** Examples: dependencies pinned to wrong versions; defaults that satisfy the test but contradict the phase spec; file formats that pass tests but aren't actually usable.
 5. **Scope-creep audit.** Are there files, dependencies, configuration, or features in the PR beyond the ticket?
@@ -50,6 +50,7 @@ end_to_end_spot_check:
   what_was_run: <one-line description>
   result: <"matches expectations" | "discrepancy">
   discrepancy_note: <only if discrepancy>
+dead_ends_found: [<one-line descriptions, or empty>]
 pr_vs_diff_check:
   result: <"matches" | "discrepancy">
   discrepancy_note: <only if discrepancy>

@@ -17,6 +17,7 @@ Constraints:
 - **Honor every hard constraint** in `PROJECT_OVERVIEW.md` that applies. PR Reviewer will run grep checks; pre-empt them.
 - **Where the ticket gives you a choice**, pick one and document the choice.
 - **Match the project's established conventions** if any have been set in prior tickets.
+- **Ship a complete, exercisable slice.** Don't leave a UI element wired to an endpoint that doesn't exist yet, or a backend endpoint nothing can trigger. If this ticket's scope genuinely can't produce a full end-to-end slice on its own, keep the unfinished half out of the human-facing surface (don't render it, don't link it) rather than merging something that looks done and isn't.
 
 Observations and follow-ups:
 
@@ -31,6 +32,7 @@ Commit on a feature branch named `phase-<N>/ticket-<NNN>-<slug>`. Open a PR agai
 - For each acceptance criterion, the file(s) and line range(s) that satisfy it.
 - Any SWE-controlled choices made and the reasoning.
 - Any out-of-scope observations.
+- **Testing steps** — numbered, concrete instructions a human can follow against a running instance of the app to exercise every acceptance criterion by hand: commands to run, URLs to open, buttons to click, inputs to enter, and the expected result at each step. Vague steps ("verify it works") are not acceptable; this section is what the human uses at Gate 2 to confidently mark the ticket done.
 
 Do NOT merge the PR. Do not approve your own PR.
 

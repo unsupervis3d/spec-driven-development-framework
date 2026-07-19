@@ -234,7 +234,7 @@ The Facilitator maintains `.facilitator/state.json` in the project repo. Schema 
 ```json
 {
   "framework_version": "0.2.0",
-  "project_name": "Trade Trainer",
+  "project_name": "Example Project",
   "current_phase": 1,
   "current_state": "TESTER_VERIFICATION",
   "current_ticket": "TICKET-003",

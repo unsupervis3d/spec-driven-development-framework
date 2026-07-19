@@ -27,6 +27,7 @@ Perform these checks in order:
 4. **Behavioral contract check.** For any contracts named in the ticket or phase spec, verify the implementation satisfies them. Tests passing is necessary but not sufficient.
 5. **Architectural drift check.** Has this PR introduced patterns, abstractions, or dependencies that conflict with `PROJECT_OVERVIEW.md`'s architecture section?
 6. **Convention drift check.** If prior tickets established conventions, does this PR follow them?
+7. **Completeness / testability check.** Does the PR ship a fully working, human-exercisable slice, or does it leave a dead end — a UI element wired to an endpoint/service that doesn't exist yet, a route or flag nothing turns on, a form that writes to a table not yet migrated? Are the PR description's testing steps concrete enough that you, fresh eyes, no diff read, could follow them and reach a real result?
 
 Produce a markdown review report at `reviews/phase_<N>/pr_reviewer_ticket_<NNN>.md`. Commit on a branch named `phase-<N>/pr-reviewer-ticket-<NNN>-report`. Do not commit to `main`.
 
@@ -68,6 +69,11 @@ architectural_drift:
 convention_drift:
   found: <true | false>
   items: [<one-line descriptions>]
+completeness_check:
+  result: <"PASS" | "FAIL">
+  dead_ends_found: [<one-line descriptions, or empty>]
+  testing_steps_usable: <true | false>
+  note: <one-line, only if FAIL or testing_steps_usable is false>
 overall_verdict: <"approve" | "approve_with_notes" | "request_changes" | "reject">
 verdict_summary: <one-line>
 blockers_for_merge:

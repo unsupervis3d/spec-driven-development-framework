@@ -19,7 +19,7 @@ Each ticket must include:
 - **Out-of-scope notes.** Specific things that might be confused with this ticket's work but belong elsewhere.
 - **Dependencies.** Other tickets in this phase that must be completed first, if any.
 
-Produce tickets in dependency order. Aim for tickets that are independently implementable.
+Produce tickets in dependency order. Aim for tickets that are independently implementable **and independently demonstrable** — once a ticket's PR merges, a human should be able to exercise something real, not stare at a UI element wired to a backend that doesn't exist yet (or vice versa). If a full end-to-end slice genuinely can't fit in one ticket, keep the incomplete half out of the human-facing surface (don't wire it up, don't render it) until the ticket that completes it lands, and say so in that ticket's out-of-scope notes.
 
 Target band: 3-8 tickets per phase. Fewer likely means a ticket is doing too much; more likely means tickets are too granular. Treat as a target, not a hard limit.
 

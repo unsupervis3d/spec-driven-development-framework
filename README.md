@@ -9,7 +9,7 @@ This repo holds the framework itself: the methodology, the agent roster, the Fac
 ## Status
 
 **Version:** 0.2.0
-**Maturity:** Active development. Trade Trainer is the original pilot project (mid-phase). New projects starting on 0.2.0 use the Facilitator path from day one.
+**Maturity:** Active development. The framework has been exercised against a real private pilot project (mid-phase). New projects starting on 0.2.0 use the Facilitator path from day one.
 
 Expect breaking changes between 0.x versions. The framework is tagged at each meaningful revision so projects can pin to a known version.
 
@@ -18,22 +18,26 @@ Expect breaking changes between 0.x versions. The framework is tagged at each me
 ## What's in here
 
 - **`SPEC_DRIVEN_BUILD_FRAMEWORK.md`** — the methodology. Read this first.
+- **`HUMAN_GATES.md`** — the human review gates and why they're the load-bearing idea of the whole framework. Read this second.
 - **`AGENT_ROSTER.md`** — the seven worker roles that produce artifacts: Spec Author, PM, Test Author, SWE, Tester, PR Reviewer, Phase Reviewer.
 - **`FACILITATOR.md`** — the orchestrator (meta-role) that holds framework knowledge, tracks state, spawns the worker roles as subagents, and surfaces human gates. The recommended way to use the framework.
 - **`USING_THE_FRAMEWORK.md`** — operational glue: bootstrapping a new project, the Facilitator path, the manual path, when to update the framework.
 - **`prompts/`** — invocation prompt templates for each worker role. Each template includes a structured-output section the Facilitator parses.
 - **`templates/`**:
+  - `PROJECT_OVERVIEW.md` — fillable template for the per-project overview (the highest-leverage artifact).
+  - `RETRO.md` — fillable template for per-project retro notes.
   - `CLAUDE.md` — per-project bootstrap.
   - `facilitator_bootstrap.md` — the prompt the human pastes to start a Facilitator session.
+- **`lightweight/`** — pared-down adaptations for ticket-scale work in existing codebases, where humans already play most of the roles. Keeps the one gate you can't drop.
 - **`CHANGELOG.md`** — what changed between versions and why.
 
 ---
 
 ## Who this is for
 
-One person: me. The framework is opinionated to the point of being personal. The design choices are calibrated to one person's failure modes with Claude Code, not to a general audience.
+This started as one person's tool, and it's opinionated to the point of being personal — the design choices are calibrated to real failure modes with Claude Code, not smoothed out for a general audience. That's deliberate; take what's useful and adapt the rest.
 
-That said, the underlying problems are widely shared. If you build software with LLM agents and watch scope drift, silent architectural revisions, or "helpful" additions you never asked for, the methodology may resonate.
+The underlying problems, though, are widely shared. If you build software with LLM agents and watch scope drift, silent architectural revisions, or "helpful" additions you never asked for, the methodology should resonate. You're welcome to use it, fork it, and adapt it (see License).
 
 ---
 
@@ -43,7 +47,7 @@ For a new project on framework v0.2.0:
 
 1. Create the project repo. Empty.
 2. Copy `templates/CLAUDE.md` to the project root, fill placeholders.
-3. Write `PROJECT_OVERVIEW.md` in the project root. This is the highest-leverage artifact in the whole framework.
+3. Copy `templates/PROJECT_OVERVIEW.md` to the project root and fill it in. This is the highest-leverage artifact in the whole framework — don't rush it.
 4. Open a Claude Code session in the project repo. Paste `templates/facilitator_bootstrap.md`.
 5. The Facilitator takes over: tells you what's next, spawns agent subagents, surfaces human gates.
 
@@ -68,7 +72,7 @@ These are the ideas the framework refuses to give up on. Anything that violates 
 
 ## Known limitations
 
-- **Lightly tested end-to-end.** Trade Trainer is the original pilot (mid-phase under 0.1.x). The Facilitator and structured outputs are new in 0.2.0 and have not yet been exercised on a full phase.
+- **Lightly tested end-to-end.** The original pilot reached mid-phase under 0.1.x. The Facilitator and structured outputs are new in 0.2.0 and have not yet been exercised on a full phase.
 - **Subagent reliability is an assumption.** v0.2.0 assumes Claude Code's subagent feature provides fresh context. If isolation is poor, fresh-context-required roles fall back to human-driven sessions.
 - **Single-implementer assumption.** A team of humans would need to negotiate role ownership in ways the framework doesn't currently address.
 - **Heavyweight for small projects.** The four-artifact pattern and seven-role roster are appropriate for multi-phase projects. Don't apply this to one-weekend builds.
@@ -78,4 +82,4 @@ These are the ideas the framework refuses to give up on. Anything that violates 
 
 ## License
 
-Personal use. No license granted for external use until past 1.0 and stable enough to support.
+MIT — see [`LICENSE`](LICENSE). Use it, fork it, adapt it. It's provided as-is, with no warranty and no promise of support; it's a methodology under active development, not a maintained product.

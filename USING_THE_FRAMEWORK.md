@@ -20,8 +20,8 @@ If you work across multiple machines, use the same path on each, or symlink so t
 
 1. **Create the project repo.** `git init`, a one-line README, optionally a GitHub remote.
 2. **Copy `templates/CLAUDE.md`** from the framework repo into the project repo root. Rename to `CLAUDE.md`. Fill in the placeholders (framework version, framework path, project state).
-3. **Write `PROJECT_OVERVIEW.md`** in the project repo root. This is the highest-leverage artifact in the whole framework. Do not skip steps to get to coding. It typically takes one or more focused sessions, not a few minutes.
-4. **Create `RETRO.md`** in the project repo root, empty. Append observations as you go — do not wait for end-of-phase.
+3. **Write `PROJECT_OVERVIEW.md`** in the project repo root, starting from `templates/PROJECT_OVERVIEW.md`. This is the highest-leverage artifact in the whole framework. Do not skip steps to get to coding. It typically takes one or more focused sessions, not a few minutes.
+4. **Create `RETRO.md`** in the project repo root from `templates/RETRO.md`. Append observations as you go — do not wait for end-of-phase.
 5. **Create `specs/` and `reviews/` directories.** Phase specs go in `specs/`; reviewer reports go in `reviews/phase_<N>/`.
 6. **Commit everything.** Tag `framework-bootstrap` so you can find it later.
 

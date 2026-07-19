@@ -89,6 +89,7 @@ The roster is ordered by pipeline position, not importance.
 - Tasks reference unstated requirements (assumes architectural decisions not in the spec or project overview).
 - Tasks introduce scope not in the spec.
 - "Done when" criteria are vague ("it works" rather than "BC-3 test passes and no regression in existing tests").
+- Sequencing leaves a dangling half-built pair — a task that wires up UI for a backend endpoint that a later task hasn't built yet, or vice versa. Each task's PR should leave the product in a state a human can actually exercise; if one end-to-end slice genuinely needs more than one task, keep the not-yet-wired half out of the human-facing surface (don't render it, don't link it) until the completing task lands, and say so in that task's "done when" or out-of-scope notes.
 
 **Human gate after this agent's output:** Yes. This is the merged "spec-and-plan gate" that combines verification of the task plan with a usefulness check on the spec. The reviewer reads the plan, then closes it and writes three concrete sentences describing what a user does with this feature when it's done. If those sentences come easily and feel substantive, the feature is well-motivated; proceed. If they feel forced or generic, the feature itself needs reconsideration before any code is written. ~5-7 minutes total.
 
@@ -151,6 +152,7 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Implementation code that makes the Test Author's tests pass.
 - Additional unit tests for internal logic the Test Author didn't cover (allowed and encouraged).
 - A summary of changes: files touched, dependencies added, any spec ambiguities encountered.
+- Manual testing steps in the PR description: numbered, concrete instructions a human can follow against a running instance — commands to run, URLs to open, buttons to click, inputs to enter — with the expected result at each step, covering every acceptance criterion. This is what makes Gate 2 a real check instead of a code read.
 
 **Failure mode:**
 - Modifies Test Author's tests to make them pass (CI catches this; agent should not attempt).
@@ -159,6 +161,8 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Implementation introduces dependencies or files not justified by any task in the plan.
 - Tests pass with the *minimum possible code* — e.g., handler calls API but doesn't handle response, because the test only checked the call. (This is the "loading state never reset" failure mode and is partially caught by Tester.)
 - Surfaces ambiguities in the spec by assuming an answer rather than flagging it.
+- Ships a PR that looks complete but contains a dead end — a button wired to an endpoint that isn't built yet, a form that writes to a table that doesn't exist, a route or flag nothing turns on. If the ticket's own scope can't produce a full end-to-end slice, the unfinished half stays out of the human-facing surface entirely rather than shipping visible-but-non-functional.
+- PR description has no testing steps, or steps too vague to actually follow ("verify it works" instead of concrete actions and expected results).
 
 ---
 
@@ -177,6 +181,7 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
   - Coverage gaps: behaviors from the spec that no test covers.
   - Test integrity issues: tests that pass but don't meaningfully verify behavior (hollow tests that survived).
   - Failed adversarial cases: edge cases that broke the implementation (network errors, empty states, race conditions, malformed input).
+  - Dead ends encountered while exercising the app: a control that renders but does nothing real (wired to an endpoint that doesn't exist, a flag nothing turns on). Tester is the first agent to actually run the app, so it's the cheapest place to catch these — before they reach PR Reviewer or the human at Gate 2.
 - If gaps or failures are found, the report becomes a fix-file-style document for the SWE to address.
 
 **Failure mode:**
@@ -207,6 +212,7 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Confirmation that the regression pass succeeded (all prior phase tests still pass).
 - Confirmation that hard-constraint greps return empty.
 - Confirmation that cost contract estimates haven't worsened.
+- Confirmation that the PR ships a complete, human-testable slice — no dead-end UI or calls to unbuilt endpoints — and that the manual testing steps in the PR description are concrete enough to follow without reading the diff.
 
 **Failure mode:**
 - Reads the diff but doesn't actually run the prior phase tests (cargo-culting "regression pass").
@@ -214,8 +220,9 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Approves changes that break tests in earlier phases.
 - Doesn't catch obvious diff hygiene issues (dead code added, debug logging left in, large files committed accidentally).
 - Misses cost regressions (e.g., a new LLM call added with no max_tokens, breaking the cost contract).
+- Approves a PR that's technically correct but not actually exercisable yet (dead-end UI, a flag nothing turns on) or that ships with no usable testing steps for Gate 2.
 
-**Human gate after this agent:** Yes. This is Squid's "gate 2" — human merges the PR. The agent's review is advisory; the human makes the final call.
+**Human gate after this agent:** Yes. This is Gate 2 — human merges the PR. The agent's review is advisory; the human makes the final call. See `HUMAN_GATES.md`.
 
 ---
 
