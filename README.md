@@ -72,7 +72,6 @@ These are the ideas the framework refuses to give up on. Anything that violates 
 
 ## Known limitations
 
-- **Lightly tested end-to-end.** The original pilot reached mid-phase under 0.1.x. The Facilitator and structured outputs are new in 0.2.0 and have not yet been exercised on a full phase.
 - **Subagent reliability is an assumption.** v0.2.0 assumes Claude Code's subagent feature provides fresh context. If isolation is poor, fresh-context-required roles fall back to human-driven sessions.
 - **Single-implementer assumption.** A team of humans would need to negotiate role ownership in ways the framework doesn't currently address.
 - **Heavyweight for small projects.** The four-artifact pattern and seven-role roster are appropriate for multi-phase projects. Don't apply this to one-weekend builds.
