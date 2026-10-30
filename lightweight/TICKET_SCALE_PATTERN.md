@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-pattern -->
 
 # Ticket-Scale Pattern — Lightweight Adaptation Reference
@@ -40,6 +40,11 @@ gate is the part you cannot drop.
 
 ## Workflow
 
+Three slash commands drive the pattern: `/ticket <N>`, `/review <PR>`, and `/ticket-status [<N>]`.
+Generic versions live in the framework repo under `templates/commands/`; copy them into the
+project's `.claude/commands/` and fill the placeholders. Each command reads its prompt file fresh
+at spawn time so the prompt files stay the single source of truth.
+
 ```
 /ticket <N>
     │
@@ -64,7 +69,9 @@ Reviewer subagent (fresh context)
     ▼
 [Human gate: verdict + testing steps surfaced in chat]
     - if reviewer rejected → fix and re-run from reviewer
-    - if approved → human walks testing steps
+    - if approved → human walks testing steps against a running
+      instance, exactly as written (this gate is never skipped,
+      and a green CI run does not stand in for it)
     │
     ▼
 [Human approval to create PR]

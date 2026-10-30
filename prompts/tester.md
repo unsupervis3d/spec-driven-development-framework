@@ -6,7 +6,16 @@
 
 Act as the Tester agent defined in `AGENT_ROSTER.md`. Your job for this session is to independently verify **PR #<PR_NUMBER>** (TICKET-<NNN>) for Phase <N> of the **<PROJECT_NAME>** project.
 
-Read `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `AGENT_ROSTER.md`, the ticket (`gh issue view <N>`), the PR (`gh pr view <PR_NUMBER>`), and the diff (`gh pr diff <PR_NUMBER>`) before doing any verification.
+Read `CLAUDE.md`, `PROJECT_OVERVIEW.md`, `AGENT_ROSTER.md`, the ticket (`gh issue view <N>` or the ticket file), the PR description (`gh pr view <PR_NUMBER>` in `github_pr` mode; `reviews/phase_<N>/pr_description_ticket_<NNN>.md` in `local_branch` mode), the diff (`gh pr diff <PR_NUMBER>`, or `git diff <base>...HEAD` plus untracked files), the review rubric `specs/PHASE_<N>_REVIEW_RUBRIC.md`, and any earlier Tester notes for this ticket (a prior round's report, if this is fix round <R>) before doing any verification. Do not read `RETRO.md` or other tickets' reviews.
+
+Delivery mode: **<github_pr | local_branch>**. Fix round: <0 | R>.
+
+Operating rules (apply to every role; see `FACILITATOR.md`, "Subagent operating rules"):
+
+- One file or one command per tool call.
+- **No git state changes.** Do not add, commit, branch, checkout, push, or create a PR. Never edit `.gitignore`. You write files; the Facilitator or the human handles git at the gate. (Manual-path users who run this prompt by hand may do the git steps themselves afterwards.)
+- Kill only processes you started, by PID. Leave none behind.
+- End with the structured output block below and nothing after it.
 
 **Your job is NOT to re-confirm that the tests pass.** SWE already confirmed that. Your job is to verify that the ticket's acceptance criteria are actually satisfied by the PR, independent of whether the tests pass.
 
@@ -17,8 +26,15 @@ Specifically:
 3. **PR-vs-diff check.** Does what was delivered match what's claimed in the PR description?
 4. **Ticket-compliance gaps the tests might miss.** Examples: dependencies pinned to wrong versions; defaults that satisfy the test but contradict the phase spec; file formats that pass tests but aren't actually usable.
 5. **Scope-creep audit.** Are there files, dependencies, configuration, or features in the PR beyond the ticket?
+6. **Walk the testing steps as written.** Follow the PR description's numbered testing steps exactly, as a stranger would, against a running instance. Do not fix a step in your head; if a command is incomplete, a URL is wrong, or the expected result doesn't match, that step fails. The human will walk these same steps at Gate 2, and your job here is to make sure they can.
+7. **Mutation pass.** For each AC's test listed in the rubric's mutation list, apply the mutation in a scratch copy of the repo (never in the working tree) and confirm the test fails. A test that survives its mutation is hollow; report it.
+8. **Check claimed defects against the data** before you record them. A discrepancy you can't reproduce twice is a note, not a finding.
 
-Produce a markdown verification report at `reviews/phase_<N>/tester_ticket_<NNN>.md`. Commit on a branch named `phase-<N>/tester-ticket-<NNN>-report`. Do not commit to `main`.
+Re-run the full suite only if code changed since the SWE's quoted run; otherwise cite the SWE's output and the commit it ran against.
+
+Stopping rule for repeat rounds: after two fix rounds on the same guard or validation, remaining theoretical evasions become accepted notes unless an honest mistake by a real user could reach them.
+
+Produce a markdown verification report at `reviews/phase_<N>/tester_ticket_<NNN>.md` (append `## Round <R>` for fix rounds; keep earlier rounds intact). Plain text only.
 
 Do NOT:
 
@@ -51,6 +67,16 @@ end_to_end_spot_check:
   result: <"matches expectations" | "discrepancy">
   discrepancy_note: <only if discrepancy>
 dead_ends_found: [<one-line descriptions, or empty>]
+testing_steps_followable: <true | false>
+testing_steps_walk:
+  - step: <n>
+    result: <"as expected" | "failed">
+    note: <only if failed: what actually happened>
+mutation_pass:
+  - ac_id: <AC-NNN-A>
+    mutation: <one-line>
+    test_failed_as_required: <true | false>
+claims_checked_rather_than_trusted: [<one-line each: the SWE claim and how you verified it>]
 pr_vs_diff_check:
   result: <"matches" | "discrepancy">
   discrepancy_note: <only if discrepancy>
@@ -67,4 +93,4 @@ blockers_for_merge:
 human_action_required: review_tester_report
 ```
 
-Stop after committing the report and emitting the YAML block.
+Stop after writing the report and emitting the YAML block.

@@ -8,8 +8,8 @@ This repo holds the framework itself: the methodology, the agent roster, the Fac
 
 ## Status
 
-**Version:** 0.2.0
-**Maturity:** Active development. The framework has been exercised against a real private pilot project (mid-phase). New projects starting on 0.2.0 use the Facilitator path from day one.
+**Version:** 0.3.0
+**Maturity:** Active development. The framework has run five real projects end to end, one of them through more than twenty phases, and 0.3.0 is the release that folds their lessons back in. New projects start on the Facilitator path from day one.
 
 Expect breaking changes between 0.x versions. The framework is tagged at each meaningful revision so projects can pin to a known version.
 
@@ -26,8 +26,13 @@ Expect breaking changes between 0.x versions. The framework is tagged at each me
 - **`templates/`**:
   - `PROJECT_OVERVIEW.md` — fillable template for the per-project overview (the highest-leverage artifact).
   - `RETRO.md` — fillable template for per-project retro notes.
+  - `DECISIONS.md` — the one-line-per-ruling decision log that specs cite by ID.
+  - `run_sheet.md` — the human acceptance run for a phase: the steps a person follows against a real boot, and signs.
   - `CLAUDE.md` — per-project bootstrap.
   - `facilitator_bootstrap.md` — the prompt the human pastes to start a Facilitator session.
+  - `START_HERE.md` — the resume prompt the Facilitator refreshes at every phase boundary.
+  - `agents/` — the worker roles as Claude Code subagent files, an alternative to pasting prompts.
+  - `commands/` — slash commands for the lightweight pattern.
 - **`lightweight/`** — pared-down adaptations for ticket-scale work in existing codebases, where humans already play most of the roles. Keeps the one gate you can't drop.
 - **`CHANGELOG.md`** — what changed between versions and why.
 
@@ -43,7 +48,7 @@ The underlying problems, though, are widely shared. If you build software with L
 
 ## Quick start
 
-For a new project on framework v0.2.0:
+For a new project on framework v0.3.0:
 
 1. Create the project repo. Empty.
 2. Copy `templates/CLAUDE.md` to the project root, fill placeholders.
@@ -67,12 +72,14 @@ These are the ideas the framework refuses to give up on. Anything that violates 
 - **Drift compounds; catch it early.** Adversarial review at the phase boundary is the only place to catch accumulated "helpful additions" before they become load-bearing.
 - **The framework is a means, not an end.** The goal is shipping products you're proud of. If the framework is making the work worse, the framework is wrong.
 - **Human gates remain real even with the Facilitator.** The Facilitator removes bookkeeping, not judgment. If a gate feels skippable, slow down.
+- **Every phase ends with a person and a sheet of steps.** Tests passing is how the agents know they're done. A human following numbered steps against a running system is how *you* know. That check has an artifact, an owner, and a signature, and no amount of auto-approval removes it.
+- **The Facilitator verifies; it does not relay.** A subagent's "tests pass" or "pushed" is a claim until the Facilitator has re-run the command itself.
 
 ---
 
 ## Known limitations
 
-- **Subagent reliability is an assumption.** v0.2.0 assumes Claude Code's subagent feature provides fresh context. If isolation is poor, fresh-context-required roles fall back to human-driven sessions.
+- **Subagent isolation has held in practice,** but subagents stall after finishing more often than they fail. The Facilitator handles that by inspecting the tree, not re-spawning.
 - **Single-implementer assumption.** A team of humans would need to negotiate role ownership in ways the framework doesn't currently address.
 - **Heavyweight for small projects.** The four-artifact pattern and seven-role roster are appropriate for multi-phase projects. Don't apply this to one-weekend builds.
 - **Tied to current LLM capabilities.** As models improve, some roles may collapse naturally. Revisit the roster yearly.

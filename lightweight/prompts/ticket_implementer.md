@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-generic-prompt -->
 
 # Ticket Implementer — Generic Template
@@ -55,7 +55,7 @@ If you find spec ambiguities, surface to the human; do not pick interpretations 
 - What changed (factual bullets).
 - AC-to-code mapping.
 - Choices made (one-liner + brief rationale).
-- Testing steps (concrete commands/actions for human verification).
+- Testing steps: numbered, concrete instructions a human follows against a running instance to exercise every acceptance criterion by hand — commands to run (copy-paste complete, environment variables inside the command), URLs to open, buttons to click, inputs to enter — with the expected result at each step. Written for someone who did not build the feature. "Verify it works" is not a step. The human walks these before the PR is created; they are the gate.
 
 ## Append implementation notes
 
@@ -80,6 +80,13 @@ test_execution:
   command: <cmd>
   result_summary: <"X passed, Y failed">
   all_tests_passing: <true | false>
+testing_steps:
+  - step: 1
+    action: <exact command, URL, click, or input>
+    expected: <what the human observes>
+  - step: 2
+    action: <...>
+    expected: <...>
 
 # if too_big_for_lite:
 size_scan_findings:

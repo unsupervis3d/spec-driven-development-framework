@@ -8,6 +8,10 @@ This project is built using the **spec-driven-build framework**, version **<X.Y.
 
 The framework repository lives at: `<absolute path to framework repo on this machine>`
 
+- **Delivery mode:** `<github_pr | local_branch>`. <github_pr only: the `gh` identity for this project is `<identity>`; confirm with `gh auth status` before any push or PR.>
+- **Role install path:** `<pasted prompts via the Facilitator | .claude/agents/ (copied from <framework-path>/templates/agents/)>`.
+- **Worker models:** spec_author `<model>`, pm `<model>`, test_author `<model>`, swe `<model>`, tester `<model>`, pr_reviewer `<model>`, phase_reviewer `<model>`. Reviewer roles get the strongest model you can afford.
+
 The recommended way to do work on this project is via the **Facilitator** — an orchestrator session that holds the framework knowledge so you don't have to. To begin (or resume) work:
 
 1. Open a Claude Code session in this repo.
@@ -30,8 +34,10 @@ The framework's discipline is non-optional in this project. Hard constraints in 
 ## Project state
 
 - Current phase: `<phase number and name, or "not yet started">`
-- Facilitator state: see `.facilitator/state.json` (if present)
+- Facilitator state: see `.facilitator/state.json` (if present); resume prompt in `.facilitator/START_HERE.md`
 - Open tickets / in-flight work: see GitHub issues filtered by `phase-<N>` label, or `specs/phase_<N>/tickets/`
+- Decisions: `DECISIONS.md` (cite `D-<n>`; never restate)
+- Human acceptance run for the current phase: `reviews/phase_<N>/run_sheet.md` (unsigned until the human walks it)
 - Retro notes: `RETRO.md` (Facilitator appends auto-notes; you append your own)
 
 ## Project-specific notes

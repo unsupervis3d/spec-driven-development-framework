@@ -8,7 +8,7 @@ This is a starting point. After running the pipeline through a few real features
 
 ## A note on the Facilitator
 
-The seven roles below are the framework's *worker* roles — they produce the artifacts (specs, tickets, tests, code, reports) the framework runs on. As of framework v0.2.0, there is an eighth meta-role, the **Facilitator**, defined in `FACILITATOR.md`.
+The seven roles below are the framework's *worker* roles — they produce the artifacts (specs, tickets, tests, code, reports) the framework runs on. As of framework v0.2.0, there is an eighth meta-role, the **Facilitator**, defined in `FACILITATOR.md`. Framework 0.3.0 gives the Facilitator four more duties learned from real projects: it **verifies every subagent claim** with its own tool call before presenting a gate, it keeps a **stage plan** so a skipped stage is visible as an unticked box, it runs **fix rounds** (findings become red tests via the Test Author before the SWE touches anything), and it holds the phase open until the human has executed the **run sheet** (PHASE_ACCEPTANCE_RUN).
 
 The Facilitator is not a member of this roster. It does not produce any of the framework's artifacts. Its job is to *orchestrate* the seven worker roles: track project state, prepare invocation prompts, spawn each role as a subagent in fresh context, capture structured outputs, surface human gates, and maintain the audit trail.
 
@@ -18,6 +18,8 @@ In practice this means:
 - The worker roles remain unchanged from earlier framework versions. Their responsibilities, boundaries, and outputs are defined here, not in `FACILITATOR.md`.
 - Each worker role's prompt template now includes a **structured output section** (YAML) that the Facilitator parses. The structured output is in addition to, not a replacement for, the prose deliverables.
 - A worker role can still be invoked manually (paste the prompt into a fresh Claude Code session) for cases where the Facilitator is unavailable or unhelpful. The structured output section is harmless when read by humans.
+- Roles can be installed two ways: as pasted prompts (`prompts/<role>.md`, filled in per invocation) or as Claude Code subagent definitions under the project's `.claude/agents/` (one short file per role, generated from `templates/agents/`). The second is lighter and spawnable natively; both carry the same structured output.
+- Every role runs under the subagent operating rules in `FACILITATOR.md`: one file or command per tool call, no git mutations, reviewers don't read `reviews/` or `RETRO.md`, kill only your own PIDs, end with the structured block.
 
 The Facilitator does not change *what* the worker roles do. It changes *who keeps track of which one runs when*. Read on for the seven worker roles.
 
@@ -41,6 +43,8 @@ The roster is ordered by pipeline position, not importance.
 
 **Job:** Translate a one-paragraph human feature description into a complete feature spec that downstream agents can act on.
 
+The role runs in one of three modes, chosen by the Facilitator: **spec** (the default, below), **rubric** (after spec approval: produce `specs/PHASE_N_REVIEW_RUBRIC.md` and the skeleton of `reviews/phase_N/run_sheet.md`), and **discovery** (brownfield projects: inventory the existing codebase into `discovery/` before `PROJECT_OVERVIEW.md` exists).
+
 **Inputs:**
 - A short feature description from the human (1-3 paragraphs of intent).
 - `PROJECT_OVERVIEW.md` — for hard constraints, project-level cost contracts, architecture.
@@ -56,10 +60,17 @@ The roster is ordered by pipeline position, not importance.
   - Inherited or feature-specific cost contracts.
   - Acceptance criteria (mechanical, verifiable).
   - Out-of-scope list.
-  - "Done definition" tying to behavioral contracts passing and human gate.
+  - At least one **human-run acceptance criterion** per phase: a short numbered walk through the phase's user-facing surface (UI, or a scripted CLI/API session when there is deliberately no UI) against a real boot of the whole stack. These become the sections of the run sheet.
+  - "Done definition" tying to behavioral contracts passing, the signed run sheet, and the human gate.
+- In rubric mode: `specs/PHASE_N_REVIEW_RUBRIC.md` with executable hard-constraint greps (each proven against planted bad code), a **fixture allowlist** (the deliberate fake tokens and forbidden names in immutable tests that the greps must skip), and a **mutation list** (per AC, the one-line implementation change its test must catch); plus the run sheet skeleton from `templates/run_sheet.md`.
+- In discovery mode: `discovery/INVENTORY.md`, `discovery/GAPS.md`, `discovery/OPEN_QUESTIONS.md`, and a draft `PROJECT_OVERVIEW.md` whose "Existing components" section is written from the inventory.
 
 **Failure mode:**
 - Spec is ambiguous or contradictory.
+- Spec has no human-exercisable surface — nothing a person could click, run, or call at phase end. That is a scope error, not a documentation gap.
+- Spec paraphrases a design doc or the overview instead of enumerating its requirements by ID; paraphrase is how a requirement gets dropped.
+- A prohibition names its subject but not its scope ("do not use X" with no "where").
+- Rubric written after the review it governs, or greps that have never caught anything.
 - Behavioral contracts describe code structure ("the LoginForm component must call useAuthStore") instead of user-observable behavior ("submitting valid credentials results in a POST to /api/auth/login and navigation to /dashboard").
 - Behavioral contracts are missing for substantive interactive elements (per the BC pattern's "needs a contract" criteria).
 - Acceptance criteria are not mechanically verifiable.
@@ -82,6 +93,7 @@ The roster is ordered by pipeline position, not importance.
 **Outputs:**
 - A task plan: ordered list of tasks, each with a one-sentence description and a "done when" criterion.
 - An explicit handoff document for the Test Author: which behavioral contracts the Test Author should write tests for, in what order, with any preconditions noted.
+- Per ticket: a **run sheet contribution** (which of the phase's human-run ACs this ticket's testing steps will feed) and a **deployed-state premise** (one sentence: what is true of the running system between this ticket's merge and the next). Structured output names the `first_human_exercisable_ticket`.
 
 **Failure mode:**
 - Tasks are too large (a single task implementing the entire feature) or too small (granularity below useful checkpoints).
@@ -90,6 +102,7 @@ The roster is ordered by pipeline position, not importance.
 - Tasks introduce scope not in the spec.
 - "Done when" criteria are vague ("it works" rather than "BC-3 test passes and no regression in existing tests").
 - Sequencing leaves a dangling half-built pair — a task that wires up UI for a backend endpoint that a later task hasn't built yet, or vice versa. Each task's PR should leave the product in a state a human can actually exercise; if one end-to-end slice genuinely needs more than one task, keep the not-yet-wired half out of the human-facing surface (don't render it, don't link it) until the completing task lands, and say so in that task's "done when" or out-of-scope notes.
+- The last ticket is the first time anything is human-exercisable. The end-to-end slice arrives early and widens.
 
 **Human gate after this agent's output:** Yes. This is the merged "spec-and-plan gate" that combines verification of the task plan with a usefulness check on the spec. The reviewer reads the plan, then closes it and writes three concrete sentences describing what a user does with this feature when it's done. If those sentences come easily and feel substantive, the feature is well-motivated; proceed. If they feel forced or generic, the feature itself needs reconsideration before any code is written. ~5-7 minutes total.
 
@@ -110,6 +123,16 @@ Test Author is the load-bearing agent of this entire framework. Bad tests here c
 - Test files for each behavioral contract.
 - Each test must fail when run against the pre-SWE codebase. The agent's output includes the output of running the tests; any test that passes against unchanged code causes the agent's output to be rejected automatically.
 - A "test manifest" mapping each BC to one or more test functions, so the Tester agent later can verify coverage.
+- **Mutation seeds:** for at least one test per AC, the one-line implementation change that would make it fail. These seed the rubric's mutation list.
+- Any additions to the rubric's fixture allowlist (file and reason) for deliberate fake tokens or forbidden names the tests must contain.
+- In a fix round: the "fix now" findings from `reviews/phase_N/TICKET-NNN_TO_FIX_roundR.md` encoded as red tests in **new** test files, or a reasoned rejection of any finding whose proposed fix would change a behavioral contract.
+
+**Oracle rules:**
+- The expected value is never computed by the code under test.
+- Never assert by the absence of a substring.
+- Fakes validate the fields the cited API or schema actually requires; fixture data is semantically and calendar-plausible, because a golden file encodes whatever junk it was built from.
+- A guard scoped to one element misses the same cause in siblings and ancestors; write the test at the level the defect lives.
+- Run only your own test files. The full suite is the SWE's, once.
 
 **Mandatory checklist for API-element BCs (the "five states"):**
 
@@ -130,6 +153,8 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Tests use mocks set up to match any implementation (e.g., `expect(fetch).toHaveBeenCalled()` without asserting on arguments — the test passes whether the right URL was called or not).
 - Tests don't actually run (broken imports, missing test setup).
 - Tests don't follow the project's existing conventions (foreign style that's hard to maintain).
+- Tests survive their own mutation seed (the test is hollow and the seed proved it).
+- Expected values derived from the implementation, or assertions on what is *absent*.
 
 **Constraint that follows from this agent:** The SWE agent may not modify test assertions or test logic in files this agent produces. Trivial fixes (import paths, typo corrections) are permitted but must be flagged in the PR description. A pre-merge CI check diffs the test files; substantive changes to assertions cause the PR to be rejected.
 
@@ -140,6 +165,8 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 ## 4. SWE
 
 **Job:** Implement the tasks from the PM's plan such that the Test Author's tests pass, without modifying those tests. SWE may use gh issue comment to annotate existing tickets with observations relevant to that ticket's future work. SWE may not use gh issue create; new follow-up work surfaces via the PR description and requires human review before becoming a tracked item.
+
+The SWE writes files only. It does not add, commit, branch, push, or open the PR; the Facilitator or the human does that at the gate, in whichever delivery mode (`github_pr` or `local_branch`) the project runs.
 
 **Inputs:**
 - The approved feature spec (for context).
@@ -152,10 +179,16 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Implementation code that makes the Test Author's tests pass.
 - Additional unit tests for internal logic the Test Author didn't cover (allowed and encouraged).
 - A summary of changes: files touched, dependencies added, any spec ambiguities encountered.
-- Manual testing steps in the PR description: numbered, concrete instructions a human can follow against a running instance — commands to run, URLs to open, buttons to click, inputs to enter — with the expected result at each step, covering every acceptance criterion. This is what makes Gate 2 a real check instead of a code read.
+- Manual testing steps in the PR description **and** as the structured `testing_steps` field: numbered, concrete instructions a human can follow against a running instance — commands to run (copy-paste complete, environment variables inside), URLs to open, buttons to click, inputs to enter — with the expected result at each step, covering every acceptance criterion, written for someone who did not build the feature. This is what makes Gate 2 a real check instead of a code read; the Facilitator quotes the field verbatim at the gate.
+- This ticket's section of `reviews/phase_N/run_sheet.md`: the subset of the testing steps a human re-runs at phase end.
+- The PR description kept at `.facilitator/scratch/ticket_NNN_pr_description.md` so the Facilitator can diff it against the branch after every later push.
+- One full-suite run, at the end, with its real output quoted. Before that, only this ticket's tests.
+- A same-class audit: for each defect a finding names, every other instance of that class in the touched code, fixed or justified.
 
 **Failure mode:**
-- Modifies Test Author's tests to make them pass (CI catches this; agent should not attempt).
+- Modifies Test Author's tests to make them pass (CI catches this; agent should not attempt). This holds even when the spec owner has ruled mid-flight — the ruling goes through the Test Author. In a fix round the SWE may add a *new* test file only if the Test Author's red tests prove insufficient.
+- Performs a git mutation (commit, branch, push, PR) from inside the role.
+- Fixes one instance of a defect when the review named a class. Four instances take four rounds unless the SWE sweeps.
 - Implementation passes tests but is brittle in ways the tests don't catch (handled by Tester downstream).
 - Implementation violates hard constraints from project overview (handled by PR Reviewer).
 - Implementation introduces dependencies or files not justified by any task in the plan.
@@ -182,13 +215,24 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
   - Test integrity issues: tests that pass but don't meaningfully verify behavior (hollow tests that survived).
   - Failed adversarial cases: edge cases that broke the implementation (network errors, empty states, race conditions, malformed input).
   - Dead ends encountered while exercising the app: a control that renders but does nothing real (wired to an endpoint that doesn't exist, a flag nothing turns on). Tester is the first agent to actually run the app, so it's the cheapest place to catch these — before they reach PR Reviewer or the human at Gate 2.
-- If gaps or failures are found, the report becomes a fix-file-style document for the SWE to address.
+- `testing_steps_followable`: whether the PR description's numbered steps, walked exactly as written against a running instance, produced the expected results. The Facilitator quotes this field verbatim at Gate 2. A step the Tester had to fix in its head is a failed step.
+- A mutation pass: each mutation on the rubric's list applied in a scratch copy of the repo (never the working tree), with the result.
+- `claims_checked_rather_than_trusted`: each SWE claim and how it was verified.
+- If gaps or failures are found, the report feeds the fix round; findings get stable IDs for the human's rulings.
+
+**Discipline:**
+- Checks a claimed defect against the data before recording it; a discrepancy that won't reproduce twice is a note.
+- Re-runs the full suite only if code changed since the SWE's quoted run; otherwise cites that run and its commit.
+- Honours earlier Tester notes on the same ticket (prior rounds), appending `## Round R` to the same report.
+- Stopping rule: after two fix rounds on the same guard or validation, remaining theoretical evasions become accepted notes unless an honest mistake by a real user could reach them.
 
 **Failure mode:**
 - Reports "no issues" when issues exist (false negative).
 - Reports issues that aren't real (false positive — wasting SWE time).
 - Limits scope to "running the pre-written tests" (which the CI already does — this agent is supposed to go further).
 - Doesn't actually run the application — only reads code.
+- Reports `testing_steps_followable: true` without having walked them as a stranger would.
+- Runs the mutation pass in the working tree.
 
 **Note on this role's evolution:** This agent's job overlaps with Test Author (writing missing tests) and PR Reviewer (verifying code quality). Watch for this. If after 5-10 features Tester's findings are mostly things Test Author should have caught or things PR Reviewer would have caught, collapse this role into one of those agents.
 
@@ -212,7 +256,15 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Confirmation that the regression pass succeeded (all prior phase tests still pass).
 - Confirmation that hard-constraint greps return empty.
 - Confirmation that cost contract estimates haven't worsened.
-- Confirmation that the PR ships a complete, human-testable slice — no dead-end UI or calls to unbuilt endpoints — and that the manual testing steps in the PR description are concrete enough to follow without reading the diff.
+- Confirmation that the PR ships a complete, human-testable slice — no dead-end UI or calls to unbuilt endpoints — and that the manual testing steps in the PR description are concrete enough to follow without reading the diff (read the steps *before* the diff, as a stranger).
+- Hard-constraint results from **both** the rubric's greps and the reviewer's own independently written greps for the same intent, compared; files on the rubric's fixture allowlist skipped.
+- `claims_checked_rather_than_trusted`: every factual claim in the PR description, checked against the diff or by running the command. The PR body has no other cold reader.
+- A same-class audit per defect found (count and locations, not the first instance).
+- A hollow-test check: each AC and contract test shown to fail under the rubric's mutation.
+- A regression check: nothing touched undoes an earlier ticket's constraint or contract compliance.
+- On `request_changes` or `reject`: `reviews/phase_N/TICKET-NNN_TO_FIX_roundR+1.md` with stable IDs (`B-n` blocking, `N-n` non-blocking), evidence, and the smallest closing fix, for the human's rulings.
+- On a fix round: a **delta review** with its own prior report attached, so interactions between fixes are seen; appended as `## Round R`.
+- Design notes for later tickets, when the diff reveals something the next ticket should know.
 
 **Failure mode:**
 - Reads the diff but doesn't actually run the prior phase tests (cargo-culting "regression pass").
@@ -221,6 +273,8 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Doesn't catch obvious diff hygiene issues (dead code added, debug logging left in, large files committed accidentally).
 - Misses cost regressions (e.g., a new LLM call added with no max_tokens, breaking the cost contract).
 - Approves a PR that's technically correct but not actually exercisable yet (dead-end UI, a flag nothing turns on) or that ships with no usable testing steps for Gate 2.
+- Trusts the PR description for facts the diff can contradict. In one real fix round, two of five findings were the PR body stating things the branch did not do.
+- Reports one instance of a defect class and lets the next round find the next one.
 
 **Human gate after this agent:** Yes. This is Gate 2 — human merges the PR. The agent's review is advisory; the human makes the final call. See `HUMAN_GATES.md`.
 
@@ -244,14 +298,21 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 - Verification that all phase-level acceptance criteria pass.
 - Verification that cost contracts at phase scope are satisfied with real usage data.
 - Confirmation that the cross-phase integration tests pass.
+- Verification that `reviews/phase_N/run_sheet.md` is **signed** (date, environment, per-section result, proof each check ran, at least one negative control) and that its sections cover every human-run AC in the Done Definition. An unsigned or incomplete run sheet is a blocking finding on its own.
+- A **fifth-instance sweep**: for each defect class any ticket's review found this phase (the Facilitator passes the class names only), the whole merged codebase grepped for instances that fell between ticket scopes.
+- A design-doc drift check, if the project keeps one under `docs/plans/`.
+- The rubric's mutation list, each one proven in a scratch copy.
+- Report at `reviews/phase_N/phase_review.md`; on `request_changes`, `reviews/phase_N/PHASE_N_TO_FIX_roundR+1.md` with stable IDs and, per finding, which ticket or role it routes to.
 
 **Failure mode:**
+- Passes a phase whose run sheet is unsigned, or signed without proof the checks ran.
+- Kills a process it did not start. This role boots the whole stack; it records the PIDs it starts and stops only those.
 - Treats the phase as the sum of features without checking the seams (misses integration breakage between features).
 - Doesn't run cost-contract verification queries against real data.
 - Skips the regression pass (this is the most important phase-level check).
 - Approves a phase where individual features pass but the phase-level integration is broken.
 
-**Human gate after this agent:** Yes — and this is the 15-minute "be a user" check from the framework. The Phase Reviewer's verdict is advisory; the human actually uses the product as a user would before declaring the phase complete.
+**Human gate around this agent:** Yes, on both sides. *Before* the Phase Reviewer runs, the human executes and signs the run sheet (PHASE_ACCEPTANCE_RUN, the "be a user" check from `HUMAN_GATES.md`, now scripted). *After*, the human reads the phase report. The Phase Reviewer's verdict is advisory; no standing authorization covers either side.
 
 ---
 
@@ -260,10 +321,12 @@ A test suite covering only state 4 is unacceptable. This is the failure mode tha
 ```
 Human writes 1-paragraph intent
     ↓
-[1] Spec Author → feature spec
-    ↓ (no gate — spec sanity-checked indirectly via plan review)
-[2] PM → task plan
-[3] Test Author → failing tests  (runs in parallel with PM)
+[1] Spec Author (spec mode) → phase/feature spec, incl. human-run ACs
+    ↓ (human gate: review spec)
+[1] Spec Author (rubric mode) → review rubric + run sheet skeleton   ← RUBRIC_AUTHORING
+    ↓ (human gate: review rubric; greps proven against planted bad code)
+[2] PM → task plan, run-sheet contributions, deployed-state premises
+[3] Test Author → failing tests + mutation seeds  (runs in parallel with PM)
     ↓
 Gate 1: Plan approval + usefulness check (~5-7 min)
     Reviewer reads the plan, closes it, writes three concrete
@@ -271,20 +334,28 @@ Gate 1: Plan approval + usefulness check (~5-7 min)
     If the sentences come easily and feel substantive, proceed.
     If they feel forced, the feature itself needs reconsideration.
     ↓
-[4] SWE → implementation that makes tests pass
+[4] SWE → implementation that makes tests pass, `testing_steps`, run sheet section
     ↓
-[5] Tester → adversarial verification
-    ↓ (internal loop with SWE if issues)
-[6] PR Reviewer → diff review + regression pass
+[5] Tester → adversarial verification, walks the steps, `testing_steps_followable`
+    ↓
+[6] PR Reviewer → diff review + truth check + regression pass
+    ↓
+    ├─ findings? → Human ruling gate (fix now / defer / to Spec Author)
+    │              → FIX_ROUND: Test Author encodes findings as red tests
+    │                 → SWE → Tester → PR Reviewer (delta) → back here
     ↓
 Gate 2: PR merge (~5-15 min)
+    Human walks `testing_steps` against a running instance, then merges.
     ↓
 ... loop through all features in the phase ...
     ↓
-[7] Phase Reviewer → cross-feature integration + phase rubric
+Gate 3: PHASE_ACCEPTANCE_RUN — human executes and signs
+    reviews/phase_N/run_sheet.md against a clean-clone boot (~15 min).
+    Never covered by a standing authorization.
     ↓
-Gate 3: "Be a user" (~15 min per phase)
-    ↓
+[7] Phase Reviewer → signed run sheet verified + cross-feature
+    integration + phase rubric + fifth-instance sweep
+    ↓ (human gate: read phase report)
 Move to next phase
 ```
 
@@ -294,19 +365,17 @@ Across a 100-feature project, this is roughly 30-45 hours of human review work o
 
 ---
 
-## Open questions for the first run
+## Open questions after five projects
 
-These are uncertainties that the roster can't resolve from the armchair. Track them; revisit after the first phase of real use.
+The roster has now run on five real projects, one of them through more than twenty phases. The first-run questions (does Spec Author earn its place, what tracks state, what happens when an agent fails) are answered: Spec Author stays, the Facilitator's state file and stage plan track state, and a failed agent is handled by the Facilitator verifying the tree and asking the human. What remains open:
 
-1. **Does Tester earn its keep, or do Test Author and PR Reviewer cover its work?** Track Tester's findings across the first 10 features. If <20% of Tester's findings are unique (not also surfaced by Test Author's tests or PR Reviewer's review), collapse Tester into PR Reviewer.
+1. **Does the stage plan get ticked reflexively?** It exists because a skipped PR review went unnoticed. A checklist that is ticked without the state's exit condition being met is worse than none. Watch for a tick with no artifact behind it.
 
-2. **Does Phase Reviewer earn its keep, or is it redundant after good per-feature reviews?** Track whether Phase Reviewer catches anything PR Reviewer didn't. If Phase Reviewer's findings are consistently the same caliber as PR Reviewer's (just at larger scope), the role can collapse — PR Reviewer at the last PR of a phase runs an expanded rubric.
+2. **Is three fix rounds the right ceiling before the Facilitator escalates?** One ticket took seven rounds across two PRs. Three is a guess at where "fix" becomes "respec".
 
-3. **Is Spec Author the right place to start, or should the human still write feature specs by hand?** Spec Author is the highest-leverage agent if it works (turns a paragraph into a complete spec) but the riskiest (a bad spec drift compounds through the whole pipeline). For the first phase, the human may want to write specs directly and skip this agent, then introduce it once the spec format is well-calibrated.
+3. **Does the run sheet stay honest when one human writes the spec, walks the sheet, and signs it?** The sheet is the only test the agents can't run, and a single-person project has no second signature.
 
-4. **What's the right tool for tracking feature state across the pipeline?** The roster assumes a tracker (ClickUp or similar) exists. The pipeline produces 6-7 task transitions per feature; without a tracker, the state lives in markdown files and chat history, which doesn't scale past a handful of features in flight.
-
-5. **What's the rule when an agent fails?** If the Test Author writes tests that look obviously wrong, do we (a) re-run it, (b) escalate to the human, or (c) let it through and rely on Tester to catch it? The roster doesn't specify. Probably: agents should fail loudly (refuse to produce output if they can't do the job confidently), but this needs to be tested.
+4. **Should Tester and PR Reviewer collapse on small tickets?** Observed deviations, recorded here as data and not as a recommendation: one project dropped the Tester after its first sub-phase and had the Facilitator do the mechanical re-checks; another collapsed per-ticket PR review into a single phase review from its fifth phase on. Both projects shipped. Neither measured what the dropped role would have caught. The roster keeps both roles until someone does.
 
 ---
 

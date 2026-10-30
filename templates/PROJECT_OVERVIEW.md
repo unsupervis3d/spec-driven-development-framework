@@ -79,6 +79,33 @@
 - **<Entity>** — <description and invariants>
 - <...>
 
+### Existing components (brownfield only)
+
+> Delete this subsection on a greenfield project. On a brownfield one, it is written from
+> `discovery/INVENTORY.md` (produced by the Spec Author in discovery mode), not from memory. For
+> each component that already exists: its interface, whether this project owns it or depends on
+> it, and where its contract lives. A dependency on another repo gets a generated contract
+> (schema from that repo's code, a fake server, contract tests in both CIs), never a prose one.
+
+- **<Component>** — <interface; owned / depended-on; contract location>
+- <...>
+
+---
+
+## How a human verifies a phase
+
+> This section is the standing preamble of every phase's `reviews/phase_<N>/run_sheet.md`. Each
+> phase's Done Definition adds its own sections; this one says how a person gets to a running
+> system at all. Write it so someone who has never built the project can follow it from a clean
+> clone. If you can't write it yet, you don't know how the product is exercised, and that is a
+> finding about the overview, not something to defer.
+
+- **Boot from a clean clone:** `<one command, environment variables inline>`
+- **Ready when:** `<the log line, URL response, or prompt that proves the whole stack is up>`
+- **Where the surface is:** `<URL of the UI | CLI entry point | API session command, when there is deliberately no UI>`
+- **What "it works" looks like to a person:** <one or two sentences — the thing they do and the thing they see>
+- **Standing negative control:** <one action that must always be refused, and how the refusal looks>
+
 ---
 
 ## Hard constraints

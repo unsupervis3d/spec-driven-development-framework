@@ -89,6 +89,11 @@ PR merges into the base branch.
 back empty. Then actually follow the PR's testing steps against a running instance — not just read
 them. Make the merge call yourself — the reviewer's verdict is advisory, not binding.
 
+The testing steps are the gate's input, not decoration. The SWE emits them as a structured field,
+the Tester reports whether they could be followed as written, and the Facilitator quotes both
+verbatim when it presents the gate. If the steps are missing or you can't follow them to a real
+result, the gate is not open yet — send it back, don't fill in the blanks yourself.
+
 **What you're catching:**
 - **Hard-constraint violations.** The non-negotiable, grep-enforceable rules from
   `PROJECT_OVERVIEW.md`. This is the most mechanical check and the most important — it is the line
@@ -114,6 +119,19 @@ declare the phase done and move on.
 **What you do:** Actually use the product the way a real user would. Not read about it. Not run the
 tests. *Use it.* Click the buttons, upload the file, have the conversation, hit the error paths on
 purpose.
+
+You do this from a script, not from memory: `reviews/phase_<N>/run_sheet.md`. The Spec Author
+writes its skeleton with the rubric (one section per human-run acceptance criterion in the phase's
+Done Definition), each ticket's SWE fills in the concrete steps as the ticket merges, and you
+execute it against a real boot of the whole stack, from a clean clone, walking the entire first-run
+path and not only the new feature. Every section needs proof the check ran (a log line, a
+screenshot, a command's output) and at least one negative control — something that should fail,
+failing. Then you sign it: date, environment, per-section result. The Phase Reviewer checks that
+the signed sheet exists before it will pass the phase.
+
+The run sheet is code. A log line it promises needs a real emitter; a step it describes needs to be
+executable by someone who did not build the feature. If a section can't be executed as written,
+the sheet is the defect, and it goes back to the ticket that owns it.
 
 **What you're catching:**
 - **Integration breakage at the seams.** Individual features can each pass while the phase as a
@@ -144,6 +162,36 @@ will not advance past a gate without your explicit confirmation. If it presents 
 notice you'd review it lightly, that is the signal to slow down, not speed up. The Facilitator makes
 the gates cheaper to staff. It does not make them optional. **The Facilitator removes bookkeeping,
 not judgment.**
+
+### Standing authorization: the one sanctioned shortcut
+
+On a long phase you will be tempted to tell the Facilitator "just keep going when everything is
+green." The framework allows this, in a recorded form called a **standing authorization** (see
+`FACILITATOR.md`): you name the gates it covers and the condition, the Facilitator logs every gate
+it advances under it, and it lapses at phase end.
+
+What it can cover: reading a clean Tester report, reading a clean PR Reviewer report, running the
+merge command, moving to the next ticket.
+
+What it can never cover, no matter how it's worded:
+
+- Your walk of the testing steps on the **last ticket of a phase**.
+- The **phase acceptance run** (Gate 3, the run sheet).
+- Any **ruling** on a finding. Only you rule; the Facilitator never "ratifies".
+- Spec, rubric, or amendment approval.
+- Any gate where a verdict was anything other than a clean approve.
+
+The point of the design is that auto-approve can take the mechanical gates off your plate while
+guaranteeing that every phase still ends with you, a running system, and a sheet of steps you can
+follow. If a run of auto-approved tickets ends in a phase you never touched by hand, the framework
+has failed, and the standing authorization was the cause.
+
+### Rulings
+
+When a verifier returns findings, you rule on each one before any fix starts: **fix now**, **defer**
+to the backlog, or **route to the Spec Author** because the finding is really a spec defect. The
+Facilitator presents the findings with stable IDs and records your rulings. A deferred finding
+keeps its ID so the next reviewer can see it was a decision, not an oversight.
 
 ---
 

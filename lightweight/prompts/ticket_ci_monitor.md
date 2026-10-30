@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-generic-prompt -->
 
 # CI Monitor — Generic Template

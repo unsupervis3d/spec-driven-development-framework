@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-generic-prompt -->
 
 # Reviewer — Generic Template (cold context, work-unit-driven)
@@ -35,7 +35,9 @@ If any of these are accidentally available, surface the issue in structured outp
 3. Scope check — out-of-scope additions, in-scope omissions, new dependencies, convention departures.
 4. Architectural sanity — patterns consistent with the codebase, no unjustified abstractions.
 5. Test sanity — tests exercise the ACs, not tautological.
-6. Completeness — does the diff leave a dead end (UI wired to an endpoint/service that doesn't exist, a route or flag nothing enables)? Different from scope: this is about whether merging now leaves something the human genuinely can't exercise, and whether the draft's testing steps are concrete enough to actually follow.
+6. Completeness — does the diff leave a dead end (UI wired to an endpoint/service that doesn't exist, a route or flag nothing enables)? Different from scope: this is about whether merging now leaves something the human genuinely can't exercise, and whether the draft's testing steps are concrete enough to actually follow. Read the steps before the diff and judge them as a stranger.
+7. Draft truth check — every factual claim in the draft (files touched, behavior, "tests pass", "no schema change") checked against the diff or by running the command. List what you checked rather than trusted. The draft has no other cold reader.
+8. Same-class audit — for each defect you find, grep for every other instance of the same class in the diff and the code it touches. Report the count and locations, not the first one.
 
 ## Verdict
 
@@ -75,6 +77,14 @@ scope_findings:
 architectural_concerns: [<...>]
 test_concerns: [<...>]
 completeness_concerns: [<...>]  # dead ends, or testing steps too vague to follow
+claims_checked_rather_than_trusted:
+  - claim: <one-line, from the draft>
+    how_checked: <command or diff location>
+    held: <true | false>
+same_class_audits:
+  - defect_class: <one-line>
+    instances: <integer>
+    locations: [<file:line>]
 
 overall_verdict: <"approve" | "approve_with_notes" | "request_changes">
 verdict_summary: <one-line>

@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-generic-prompt -->
 
 # Review-Only — Generic Template
@@ -30,7 +30,7 @@ You are reading this change cold. You have no prior knowledge of the author's in
 
 ## Checks
 
-Same six as the work-unit reviewer: hard constraints, AC coverage (against the linked work unit), scope, architectural sanity, test sanity, completeness (does the diff leave a dead end — UI wired to an endpoint/service that doesn't exist, a route or flag nothing enables — and are the testing steps in the change description concrete enough to actually follow).
+Same eight as the work-unit reviewer: hard constraints, AC coverage (against the linked work unit), scope, architectural sanity, test sanity, completeness (does the diff leave a dead end — UI wired to an endpoint/service that doesn't exist, a route or flag nothing enables — and are the testing steps in the change description concrete enough to actually follow), the description truth check (every factual claim in the change description checked against the diff or by running the command; list what you checked rather than trusted), and the same-class audit (for each defect found, every other instance of its class in the diff and the code it touches, counted and located).
 
 ## Verdict
 
@@ -51,6 +51,8 @@ scope_findings: {...}
 architectural_concerns: [...]
 test_concerns: [...]
 completeness_concerns: [...]  # dead ends, or testing steps too vague to follow
+claims_checked_rather_than_trusted: [...]  # same shape as ticket_reviewer
+same_class_audits: [...]
 
 overall_verdict: <...>
 verdict_summary: <one-line>

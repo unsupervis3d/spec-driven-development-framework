@@ -1,4 +1,4 @@
-<!-- framework-version: 0.2.0 -->
+<!-- framework-version: 0.3.0 -->
 <!-- file-role: lightweight-readme -->
 
 # Lightweight Adaptations
@@ -30,6 +30,12 @@ The pattern, regardless of specific instance:
 ## Adaptations included
 
 - **`TICKET_SCALE_PATTERN.md`** — a worked ticket-scale adaptation: ticket-driven work on a mature web codebase. Manager-authored tickets, a CI system with known flake categories, automated ticket linking, an external personal-notes vault. Reference implementation, with all specifics generalized so you can map them onto your own tools.
+
+## Slash commands
+
+`templates/commands/` in the framework repo holds generic `/ticket`, `/review` and `/ticket-status` command files that wrap these prompts. A project copies them into its `.claude/commands/`, fills the placeholders (how to fetch a work unit, where the constraints file lives, how to link a PR to a ticket), and gets the whole implement → cold-review → human gate → PR → CI-monitor flow as one command.
+
+The implementer's testing steps are the lightweight pattern's equivalent of the full framework's run sheet: the human walks them, against a running instance, before the PR is created. Always. Even when CI is green — CI proves the tests pass, not that the feature works when a person uses it.
 
 ## Adding a new adaptation
 

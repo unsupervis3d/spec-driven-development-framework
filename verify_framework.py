@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 verify_framework.py — verify the spec-driven-build framework repo is correctly
-laid out at v0.2.0.
+laid out for its current version.
+
+The current version is read from CHANGELOG.md: the first `## [X.Y.Z]` heading
+(the `[Unreleased]` heading is ignored). README.md must declare that same
+version, and every lightweight file must carry a matching
+`<!-- framework-version: X.Y.Z -->` marker.
 
 Usage:
     python3 verify_framework.py [--fix] [path/to/framework/repo]
@@ -25,6 +30,7 @@ The script does NOT:
 """
 
 import argparse
+import re
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -34,21 +40,24 @@ from pathlib import Path
 # Expected layout
 # -----------------------------------------------------------------------------
 
-# Files expected to exist at v0.2.0. Each entry is (path, required_markers).
+# Files expected to exist. Each entry is (path, required_markers).
 # required_markers are substrings that must appear somewhere in the file.
-# Empty list = existence only.
+# Empty list = existence only. Version-dependent markers are added at runtime
+# by expected_files_for(version).
 EXPECTED_FILES = {
     "README.md": [
-        "Version:** 0.2.0",
         "FACILITATOR.md",
     ],
     "CHANGELOG.md": [
-        "[0.2.0]",
         "Facilitator",
     ],
-    "SPEC_DRIVEN_BUILD_FRAMEWORK.md": [],
+    "SPEC_DRIVEN_BUILD_FRAMEWORK.md": [
+        "run sheet",
+    ],
     "HUMAN_GATES.md": [
         "## The three gates",
+        "Standing authorization",
+        "run sheet",
     ],
     "LICENSE": [
         "MIT License",
@@ -60,6 +69,10 @@ EXPECTED_FILES = {
         "The Facilitator is the orchestrator role",
         "## State machine",
         "## Structured output",
+        "## Verification of subagent claims",
+        "PHASE_ACCEPTANCE_RUN",
+        "RUBRIC_AUTHORING",
+        "## Delivery mode",
     ],
     "USING_THE_FRAMEWORK.md": [
         "Facilitator path",
@@ -80,9 +93,24 @@ EXPECTED_FILES = {
         "You are the Facilitator",
         "Startup sequence",
     ],
+    "templates/run_sheet.md": [],
+    "templates/START_HERE.md": [],
+    "templates/DECISIONS.md": [],
+    "templates/agents/README.md": [],
+    "templates/agents/spec-author.md": [],
+    "templates/agents/pm.md": [],
+    "templates/agents/test-author.md": [],
+    "templates/agents/swe.md": [],
+    "templates/agents/tester.md": [],
+    "templates/agents/pr-reviewer.md": [],
+    "templates/agents/phase-reviewer.md": [],
+    "templates/commands/ticket.md": [],
+    "templates/commands/review.md": [],
+    "templates/commands/ticket-status.md": [],
     "prompts/spec_author.md": [
         "## Structured output",
         "role: spec_author",
+        "## Rubric mode",
     ],
     "prompts/pm.md": [
         "## Structured output",
@@ -95,10 +123,12 @@ EXPECTED_FILES = {
     "prompts/swe.md": [
         "## Structured output",
         "role: swe",
+        "testing_steps:",
     ],
     "prompts/tester.md": [
         "## Structured output",
         "role: tester",
+        "testing_steps_followable",
     ],
     "prompts/pr_reviewer.md": [
         "## Structured output",
@@ -107,8 +137,39 @@ EXPECTED_FILES = {
     "prompts/phase_reviewer.md": [
         "## Structured output",
         "role: phase_reviewer",
+        "human_acceptance_run",
     ],
 }
+
+# Lightweight files that must carry a `<!-- framework-version: X.Y.Z -->` marker.
+VERSIONED_LIGHTWEIGHT_FILES = [
+    "lightweight/README.md",
+    "lightweight/TICKET_SCALE_PATTERN.md",
+    "lightweight/prompts/ticket_implementer.md",
+    "lightweight/prompts/ticket_reviewer.md",
+    "lightweight/prompts/review_only.md",
+    "lightweight/prompts/ticket_ci_monitor.md",
+]
+
+VERSION_HEADING = re.compile(r"^## \[(\d+\.\d+\.\d+)\]", re.MULTILINE)
+
+def detect_version(root: Path) -> str | None:
+    """Return the first released version heading in CHANGELOG.md, or None."""
+    changelog = root / "CHANGELOG.md"
+    if not changelog.exists():
+        return None
+    m = VERSION_HEADING.search(changelog.read_text(encoding="utf-8"))
+    return m.group(1) if m else None
+
+def expected_files_for(version: str | None) -> dict[str, list[str]]:
+    """EXPECTED_FILES plus the markers that depend on the detected version."""
+    expected = {k: list(v) for k, v in EXPECTED_FILES.items()}
+    if version:
+        expected["README.md"].append(f"Version:** {version}")
+        expected["CHANGELOG.md"].append(f"[{version}]")
+        for rel in VERSIONED_LIGHTWEIGHT_FILES:
+            expected.setdefault(rel, []).append(f"framework-version: {version}")
+    return expected
 
 # Files that shouldn't be present (delivery vehicles, not final artifacts).
 STRAGGLER_FILES = [
@@ -147,6 +208,7 @@ The Facilitator does not change *what* the worker roles do. It changes *who keep
 
 @dataclass
 class Results:
+    version: str | None = None
     missing: list[str] = field(default_factory=list)
     marker_failures: list[tuple[str, str]] = field(default_factory=list)  # (path, marker)
     stragglers: list[str] = field(default_factory=list)
@@ -155,7 +217,9 @@ class Results:
 
     @property
     def ok(self) -> bool:
-        return not (self.missing or self.marker_failures or self.stragglers)
+        return bool(self.version) and not (
+            self.missing or self.marker_failures or self.stragglers
+        )
 
 # -----------------------------------------------------------------------------
 # Checks
@@ -163,7 +227,7 @@ class Results:
 
 def check_files(root: Path, results: Results) -> None:
     """Check that each expected file exists and contains its required markers."""
-    for rel_path, markers in EXPECTED_FILES.items():
+    for rel_path, markers in expected_files_for(results.version).items():
         path = root / rel_path
         if not path.exists():
             results.missing.append(rel_path)
@@ -218,13 +282,22 @@ def maybe_fix_addendum(root: Path, results: Results, fix: bool) -> None:
 def report(results: Results) -> None:
     """Print a human-readable report."""
     print()
+    if results.version is None:
+        print("Could not detect a released version: CHANGELOG.md has no "
+              "'## [X.Y.Z]' heading (the '[Unreleased]' heading does not count).")
+        print()
+    else:
+        print(f"Detected framework version: {results.version}")
+        print()
+
     if results.ok and not results.fixed:
-        print("Framework repo is at v0.2.0 and complete. Ready to commit and tag.")
+        v = results.version
+        print(f"Framework repo is at v{v} and complete. Ready to commit and tag.")
         print()
         print("Suggested next steps:")
-        print("  git add -A")
-        print("  git commit -m '0.2.0: Facilitator + structured outputs'")
-        print("  git tag v0.2.0")
+        print("  git status            # review what changed before staging it")
+        print(f"  git commit            # once staged, with a message for {v}")
+        print(f"  git tag v{v}")
         return
 
     if results.missing:
@@ -279,7 +352,8 @@ def report(results: Results) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Verify spec-driven-build framework repo layout at v0.2.0."
+        description="Verify spec-driven-build framework repo layout for the "
+                    "version declared in CHANGELOG.md."
     )
     parser.add_argument(
         "path", nargs="?", default=".",
@@ -298,7 +372,7 @@ def main() -> int:
 
     print(f"Verifying framework repo at: {root}")
 
-    results = Results()
+    results = Results(version=detect_version(root))
     check_files(root, results)
     check_stragglers(root, results)
     maybe_fix_addendum(root, results, args.fix)

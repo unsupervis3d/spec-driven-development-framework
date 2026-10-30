@@ -30,6 +30,8 @@ The distinction matters because the framework's machinery — detailed specs, ad
 
 **If you're in discovery**: do that first, with lighter-weight tools. Build prototypes. Talk to users. Throw things away. Use Claude Code for rapid exploration, not faithful execution. When the product is real enough that you find yourself making the same architectural decisions twice in a row, you've moved into execution mode.
 
+**Brownfield projects are a third case.** When the product is defined but the code already exists (an inherited repo, a sibling service, a rewrite), you are in execution mode with an unknown codebase. Run a **Discovery step** before `PROJECT_OVERVIEW.md`: a fresh-context Spec Author inventories what exists (`discovery/INVENTORY.md`: components and their interfaces), what is missing against the product definition (`discovery/GAPS.md`), and what nobody can answer yet (`discovery/OPEN_QUESTIONS.md`). The overview's "Existing components" section is written from the inventory, not from memory. Where the project depends on another repo, write the integration contract from that repo's code (generated schema, fake server, contract tests in both CIs), never by hand in prose.
+
 **A specific failure mode to avoid**: using this framework as a way to *feel* like you're making progress when you're actually still discovering. Spec-writing is a great procrastination for the harder work of figuring out what users want. Don't let the procedure substitute for the thought.
 
 ---
@@ -124,7 +126,9 @@ If you can't write an AC that's mechanically checkable, the spec section is too 
 
 **A phase is not "done" until its feature slice has been exercised end-to-end through its user-facing surface by a human — in a local or Codespace run — not merely until its unit and contract suites are green.** Every phase's Done Definition MUST include at least one human-run acceptance criterion that drives the phase's new capability the way a real user would (click through the UI; or run the CLI / hit the API when there is deliberately no UI) against a real boot of the whole stack. This is a first-class, blocking gate, sized to the phase (a full click-through for a UI phase; a scripted CLI/API session for a headless one). It exists because the boot / browser / cross-origin / config-coherence layer is structurally invisible to agent test suites — they inject env directly and mock the network — so "all behavioral-contract tests pass" has repeatedly NOT meant "the feature works when a person uses it" (CORS, cross-origin API base URLs, cookie SameSite, compose/env boot coherence, and streaming/SSE wiring are the recurring escapees). Plan each phase's scope so there is a coherent end-to-end slice to exercise; do not defer the user-facing surface to a later phase and call the current one complete.
 
-The same principle applies one level down, at ticket/PR granularity, wherever a phase is built through the Facilitator's per-ticket pipeline (framework v0.2.0+): see `AGENT_ROSTER.md` (PM, SWE, PR Reviewer) and `HUMAN_GATES.md` (Gate 2) for how an individual PR is held to the same no-dead-ends, human-testable standard before it merges.
+**The human-run criterion has an artifact: the run sheet.** `reviews/phase_<N>/run_sheet.md` is the numbered, copy-paste-complete script the human follows to satisfy the phase's human-run ACs. The Spec Author writes its skeleton alongside the review rubric (one section per human-run AC, with the expected result of each step), each ticket's SWE fills in the concrete steps for its slice as the ticket merges, the human executes and signs it (date, environment, per-section result, proof the check ran, at least one negative control), and the Phase Reviewer verifies the signature before passing the phase. The sheet is written for someone who did not build the feature: every command includes its environment variables, every URL is literal, every expected result is observable. Treat it as code, because it is the one test the agents can't run. See `HUMAN_GATES.md` (Gate 3) and `templates/run_sheet.md`.
+
+The same principle applies one level down, at ticket/PR granularity, wherever a phase is built through the Facilitator's per-ticket pipeline (framework v0.2.0+): see `AGENT_ROSTER.md` (PM, SWE, PR Reviewer) and `HUMAN_GATES.md` (Gate 2) for how an individual PR is held to the same no-dead-ends, human-testable standard before it merges. At that level the artifact is the PR description's **testing steps**, emitted by the SWE as a structured field and confirmed followable by the Tester.
 
 **Length:** 10-50 pages depending on phase complexity. Foundational phases (data model, agent infrastructure) get more pages. Polish phases get fewer.
 
@@ -167,9 +171,21 @@ Use a *different* Claude Code session (or even a different model) for the review
 ## Calibration Reminder
 <phase-specific guidance for the reviewer's judgment>
 <final-sweep checklist>
+
+## Fixture Allowlist
+<the deliberate fake tokens, forbidden-package names and planted bad inputs that live in immutable tests and that the hard-constraint greps must skip; one line each with the file and the reason>
+
+## Mutation List
+<for each AC with a test: one concrete mutation of the code under test that the test must catch; the reviewer proves each one fails the test>
 ```
 
 **Length:** 3-10 pages. Always shorter than the spec.
+
+Three rules learned the hard way:
+
+- **The rubric is written before the review, never during it.** The Facilitator's RUBRIC_AUTHORING state exists so this is mechanical.
+- **Every hard-constraint grep in the rubric is executed against planted bad code before the rubric is approved.** A grep that has never caught anything is a hope, not a check. State the *intent* next to the pattern list ("catch any real database client") so a reviewer can tell when the enumerated list has gone stale.
+- **Mechanical scans match framework artifacts.** Specs, reviews, PR descriptions and test fixtures quote the forbidden patterns by nature. The fixture allowlist exempts them once, in the rubric, rather than ticket by ticket; constraints that target the tests themselves are the one exception.
 
 ---
 
@@ -435,10 +451,10 @@ Every cost contract has three parts:
 - **Budget:** ≤ $0.20 per run. Hard ceiling $0.40 (includes one revision loop).
 - **Verification:** `SELECT AVG(cost_usd) FROM generation_jobs WHERE agent_name='lesson_generator' AND created_at > now() - interval '7 days'` after Phase 5 ships; must be ≤ $0.20.
 
-### CC-2: Oracle chat cost per exchange
-- **Scope:** One user message + one Oracle response, including context loading.
+### CC-2: Tutor chat cost per exchange
+- **Scope:** One user message + one tutor response, including context loading.
 - **Budget:** ≤ $0.03 per exchange (average); ≤ $0.10 (p95).
-- **Verification:** Compute from `ChatMessage` rows: AVG and p95 of `tokens_in * input_price + tokens_out * output_price` per (user_message, oracle_response) pair over 7 days.
+- **Verification:** Compute from `ChatMessage` rows: AVG and p95 of `tokens_in * input_price + tokens_out * output_price` per (user_message, tutor_response) pair over 7 days.
 
 ### CC-3: Per-user monthly cost ceiling
 - **Scope:** All LLM costs incurred by a single subscriber in a calendar month, across all features.
@@ -639,6 +655,14 @@ Things change mid-build. Handle them this way:
 **If a `PHASE_N_SPEC.md` is wrong and Phase N hasn't started:**
 - Edit it directly. No versioning needed; nothing has been built against it.
 
+**If a `PHASE_N_SPEC.md` needs a small change while Phase N is running:**
+- This is the common case and the one the rules above didn't cover, so every project invented its own. Use a **micro-amendment**: the edit is applied inline with a dated note (`> Amended YYYY-MM-DD: <what and why>`), given a stable ID (`A-<n>`), recorded in the Facilitator's state file, and handed to every later reviewer as part of its inputs. Anything that changes scope, a behavioral contract, or a hard constraint is not micro; write `specs/amendments/YYYY-MM-DD-<slug>.md` and take it through a human gate.
+- Before any amendment that changes scope or a pinned value, run a **guard census**: a fresh-context sweep of every guard test, allowlist and value pin that the change could false-fail, attached to the amendment. Handoffs that name one blocking guard have, in practice, been short by five.
+
+### Decision log
+
+Rulings accumulate: the human's answers to open questions, mid-ticket decisions, deferrals. Left unmanaged they get pasted into spec bodies, which is how a phase spec reaches two thousand lines. Keep one log per project, `DECISIONS.md`, with one line per decision: stable ID (`D-<n>`), date, who decided (`human` or the role that proposed it and the human who ratified it), the decision, and what it supersedes. Specs, tickets and commit messages cite the ID instead of restating the text. The Facilitator appends; only the human decides.
+
 ---
 
 ## What This Framework Does NOT Solve
@@ -659,14 +683,21 @@ To start a new project with this framework, create this structure:
 
 ```
 project-root/
+├── PROJECT_OVERVIEW.md
+├── DECISIONS.md
+├── RETRO.md
+├── discovery/            (brownfield only: INVENTORY.md, GAPS.md, OPEN_QUESTIONS.md)
+├── docs/plans/           (optional: a pre-phase design doc the specs must not contradict)
 ├── specs/
-│   ├── PROJECT_OVERVIEW.md
 │   ├── REVIEW_AGENT_PROMPT.md
 │   ├── PHASE_1_SPEC.md
 │   ├── PHASE_1_REVIEW_RUBRIC.md
 │   ├── PHASE_2_SPEC.md
 │   ├── PHASE_2_REVIEW_RUBRIC.md
+│   ├── amendments/       (full amendments, dated)
 │   └── ...
+├── reviews/
+│   └── phase_1/          (tester and reviewer reports, TO_FIX files, run_sheet.md)
 └── src/  (created during Phase 1)
 ```
 
@@ -703,6 +734,13 @@ Starter templates for each artifact follow. Copy and fill in.
 
 **Data flow:**
 <Describe in prose how a typical user action moves through the system.>
+
+**Existing components (brownfield only):**
+<From `discovery/INVENTORY.md`: each component that already exists, its interface, and whether this project owns it or depends on it.>
+
+## How a Human Verifies a Phase
+
+<The standing shape of every phase's run sheet: how the whole stack boots from a clean clone (one command), where the UI is reached or which CLI/API session stands in for it, and what "it works" looks like to a person. Each phase's Done Definition adds its specific sections to this.>
 
 ## Hard Constraints
 
@@ -820,7 +858,7 @@ For any phase that touches user-facing UI, this section is required. Each contra
 
 1. All acceptance criteria pass.
 2. Reviewer agent returns `verdict: pass` against `PHASE_N_REVIEW_RUBRIC.md`.
-3. Human gate: <specific manual verification that proves the phase is real>.
+3. Human gate: `reviews/phase_N/run_sheet.md` executed and signed by a human against a real boot of the whole stack from a clean clone. Sections: <one per human-run AC: what the person does, what they see>.
 ```
 
 ### Template: `REVIEW_AGENT_PROMPT.md`

@@ -37,11 +37,11 @@ A Claude Code session, scoped to **one phase of one project at a time**, that:
 These boundaries are load-bearing. Violations are framework bugs.
 
 - **Not an agent role.** It does not produce specs, tickets, tests, code, or reviews. It orchestrates the agents that do.
-- **Not autonomous.** It does not advance past human gates without explicit human confirmation. Every gate the framework defines remains a real gate.
+- **Not autonomous.** It does not advance past human gates without explicit human confirmation. Every gate the framework defines remains a real gate. The one sanctioned exception is a recorded **standing authorization** (see below), which can cover the mechanical gates and never the human-run gates.
 - **Not a decision-maker on framework rules.** When the framework is ambiguous, the Facilitator surfaces the ambiguity to the human and to RETRO. It does not silently make a call.
 - **Not perpetual.** Each Facilitator session is scoped to one phase. At phase end it produces a carry-forward briefing and ends.
-- **Not a code editor.** The Facilitator does not modify `PROJECT_OVERVIEW.md`, code, tests, or specs. Those changes belong to the human or to a designated agent. The Facilitator may *propose* changes by drafting them in a scratch location and asking the human to apply them.
-- **Not a reviewer.** The Facilitator does not approve PRs, judge code, or override the framework's review roles. It only sequences them.
+- **Not a code editor.** The Facilitator does not modify `PROJECT_OVERVIEW.md`, code, tests, or specs. Those changes belong to the human or to a designated agent. The Facilitator may *propose* changes by drafting them in a scratch location and asking the human to apply them. The one exception is a human-approved **micro-amendment** (see "Amendments" below), which the Facilitator applies verbatim and records.
+- **Not a reviewer.** The Facilitator does not approve PRs, judge code, or override the framework's review roles. It only sequences them. It does, however, *verify* every claim a subagent makes before presenting a gate (see "Verification of subagent claims" below). Verifying is re-running a command and comparing output; reviewing is judging the work. The Facilitator does the first and never the second.
 - **Not a paraphraser.** The Facilitator surfaces subagent outputs by quoting their structured fields. It does not re-summarize results in its own words when the human is making a gate decision — that would silently introduce summary-fidelity drift.
 
 ---
@@ -55,6 +55,10 @@ These boundaries are load-bearing. Violations are framework bugs.
 5. **State file as primary, filesystem inspection as verification.** Trust the state file; verify on every step. If file and filesystem disagree, stop and ask the human.
 6. **Audit everything.** Every Facilitator action gets logged. The human can reconstruct what the Facilitator did, in what order, with what inputs.
 7. **No silent framework drift.** If the Facilitator encounters a situation the framework doesn't cover, it does not invent a behavior. It surfaces it to RETRO and asks the human to decide.
+8. **Verify, don't trust.** Every claim a subagent makes about the world ("tests pass", "file saved", "pushed", "grep came back empty") is re-checked by the Facilitator with its own tool call before the gate is presented. A claim without a same-turn tool call behind it is treated as unverified.
+9. **One git mutation per command, and look before you mutate.** Run `git branch --show-current` before every commit; confirm local, origin, and (in GitHub delivery mode) the PR head commit all match before dispatching any verifier.
+10. **State and log move together.** The state file update and the log append are one step, never two. If one is written without the other, that is a bug to fix immediately, not later.
+11. **Testing steps are a gate input, not a courtesy.** No PR gate and no phase gate is presented without the human-readable testing steps quoted in it. A gate without steps the human can follow is not a gate.
 
 ---
 
@@ -67,6 +71,9 @@ PHASE_START
    │
    ▼
 SPEC_AUTHORING ────► [subagent: Spec Author] ────► [human gate: review spec] ────►
+   │
+   ▼
+RUBRIC_AUTHORING ────► [subagent: Spec Author] ────► [human gate: review rubric + run sheet skeleton] ────►
    │
    ▼
 TICKET_AUTHORING ────► [subagent: PM] ────► [human gate: review tickets] ────►
@@ -85,13 +92,18 @@ TICKET_AUTHORING ────► [subagent: PM] ────► [human gate: rev
 │      ▼
 │  PR_REVIEW ──► [subagent: PR Reviewer, fresh context guaranteed] ──► [human gate] ──►
 │      │
+│      ├──► (any verifier returned findings) ──► FIX_ROUND ──► [human ruling gate] ──►
+│      │        [subagent: Test Author encodes findings as red tests] ──► back to IMPLEMENTATION
 │      ▼
-│  MERGE ──► [human gate: confirm merge command] ──►
+│  MERGE ──► [human gate: walk the PR's testing steps, then confirm merge] ──►
 │      │
 │      ▼
 │  (loop to next ticket if more, else exit loop)
 │
 └──────────────────────────────────────────┘
+   │
+   ▼
+PHASE_ACCEPTANCE_RUN ──► [human: execute reviews/phase_<N>/run_sheet.md] ──► [human gate: run sheet signed] ──►
    │
    ▼
 PHASE_REVIEW ──► [subagent: Phase Reviewer, fresh context] ──► [human gate] ──►
@@ -137,7 +149,7 @@ Every agent prompt template must specify a structured return format. The Facilit
 
 These structured outputs are the framework's main defense against summary-fidelity drift. The Facilitator never has to compress a freeform Tester report into "Tester said the PR is fine"; it can present "verdict: APPROVE, with 1 flag on AC-001-I (whitespace, non-blocking per Tester)."
 
-The prompt templates need to be updated in v0.2.0 to add these structured-return sections. Until they are, the Facilitator either runs in a transitional mode (parsing freeform outputs and surfacing them with caveats about its own interpretation) or the human is prompted to provide the structured fields manually.
+Two fields are mandatory in every gate presentation and are quoted in full, never truncated: the SWE's `testing_steps` (the numbered, human-followable steps for the PR) and the Tester's `testing_steps_followable` verdict (whether the Tester actually walked those steps and they worked as written). These two fields are what keeps the human gate real when everything else in the pipeline is green.
 
 ---
 
@@ -153,9 +165,18 @@ For each state, the Facilitator's job is: **prepare the subagent prompt, spawn t
 - **Exit:** spec is human-approved (committed on a feature branch).
 - **Failure modes:** Human reports the spec is wrong → Facilitator surfaces re-invocation options. Spec was approved but later found wrong → return to this state with a note in RETRO.
 
+### RUBRIC_AUTHORING
+
+- **Entry:** Phase spec is approved.
+- **Subagent:** Spec Author, prompt filled from `prompts/spec_author.md` in rubric mode.
+- **Produces:** `specs/PHASE_<N>_REVIEW_RUBRIC.md` (the reviewer checklist, including the mutation list each reviewer must prove and the **fixture allowlist** — the deliberate fake tokens, forbidden-package names and planted bad code in immutable tests that the hard-constraint greps must skip), and the skeleton of `reviews/phase_<N>/run_sheet.md` (the human acceptance run, one numbered section per phase-level human AC, to be filled in by each ticket's SWE).
+- **Human gate:** review the rubric and the run sheet skeleton. Confirm every hard-constraint grep in the rubric has been executed against planted bad code and caught it.
+- **Exit:** Rubric and run sheet skeleton committed.
+- **Failure modes:** Rubric written after the review it's meant to govern → framework violation; the Facilitator refuses to spawn a reviewer without a committed rubric.
+
 ### TICKET_AUTHORING
 
-- **Entry:** Phase spec exists and is approved.
+- **Entry:** Phase spec and rubric exist and are approved.
 - **Subagent:** PM, prompt filled from `prompts/pm.md`.
 - **Human gate:** review the produced tickets.
 - **Exit:** Tickets exist (as GitHub issues or files), human has reviewed each.
@@ -173,40 +194,56 @@ For each state, the Facilitator's job is: **prepare the subagent prompt, spawn t
 
 - **Entry:** Tests exist and are failing.
 - **Subagent:** SWE, prompt filled from `prompts/swe.md`.
-- **Human gate:** read the PR.
-- **Exit:** PR is open, tests pass, human has read the PR.
-- **Failure modes:** SWE tries to modify tests → Facilitator flags as framework violation and stops. SWE produces too-large PR → Facilitator surfaces scope concern.
+- **Human gate:** read the PR. The Facilitator quotes the SWE's `testing_steps` field verbatim in the gate.
+- **Exit:** PR is open (or, in local-branch delivery mode, the branch exists and `reviews/phase_<N>/pr_description_ticket_<NNN>.md` is written), tests pass as re-run by the Facilitator, human has read the PR.
+- **Failure modes:** SWE tries to modify tests → Facilitator flags as framework violation and stops. SWE produces too-large PR → Facilitator surfaces scope concern. SWE's `testing_steps` are missing or vague ("verify it works") → return to IMPLEMENTATION; do not present the gate. SWE's PR description drifts from the branch after a later push → the Facilitator re-reads the description against the branch after every push and flags discrepancies.
 
 ### TESTER_VERIFICATION (per ticket)
 
 - **Entry:** PR is open.
 - **Subagent:** Tester, prompt filled from `prompts/tester.md`. Tester's structured output is archived to `reviews/phase_<N>/tester_ticket_<NNN>.md`.
-- **Human gate:** read the report.
-- **Exit:** Tester report exists, human has read it.
-- **Failure modes:** Tester finds problems → present to human; route fix back to SWE if needed (return to IMPLEMENTATION with notes).
+- **Human gate:** read the report. The Facilitator quotes `testing_steps_followable` verbatim.
+- **Exit:** Tester report exists, human has read it, `testing_steps_followable` is `true`.
+- **Failure modes:** Tester finds problems → present to human; enter FIX_ROUND. Tester reports the testing steps could not be followed as written → return to IMPLEMENTATION for the steps alone, even if every AC passed. Tester dies or stalls twice → the Facilitator may redo the *mechanical* re-checks itself (re-run suites, re-run greps) but never the adversarial spot-check; it records the substitution in RETRO and in the gate.
 
 ### PR_REVIEW (per ticket)
 
 - **Entry:** Tester has approved.
-- **Subagent:** PR Reviewer, prompt filled from `prompts/pr_reviewer.md`. Subagent guaranteed fresh context.
+- **Subagent:** PR Reviewer, prompt filled from `prompts/pr_reviewer.md`. Subagent guaranteed fresh context. Report archived to `reviews/phase_<N>/pr_reviewer_ticket_<NNN>.md`.
 - **Human gate:** read the report.
 - **Exit:** PR Reviewer report exists, human has read it.
-- **Failure modes:** PR Reviewer finds hard-constraint violation → block merge, route to SWE.
+- **Failure modes:** PR Reviewer finds hard-constraint violation → block merge, enter FIX_ROUND. The stage plan shows PR_REVIEW unticked for a ticket at MERGE → the Facilitator stops; it never advances to MERGE past an unticked stage.
+
+### FIX_ROUND (per ticket, repeatable)
+
+- **Entry:** Tester, PR Reviewer, Phase Reviewer, or the human's own walk of the testing steps returned findings.
+- **Human ruling gate first.** The Facilitator lists each finding with a stable ID (`B-n` blocking, `N-n` non-blocking) and the human rules on each: **fix now**, **defer** (goes to the backlog with the ID), or **route to Spec Author** (the finding is really a spec defect). Only the human can issue or ratify a ruling. The Facilitator records rulings in `reviews/phase_<N>/TICKET-<NNN>_TO_FIX_round<R>.md` and in the state file.
+- **Subagent sequence:** Test Author first, to encode every "fix now" finding as a red test (the SWE may not touch tests, so the finding must become a test before it becomes a fix); then SWE, who adds new test files only if the Test Author's red tests prove insufficient and never edits existing ones; then Tester, then PR Reviewer on the **delta**, with the same reviewer instructions and the prior report attached so interactions between fixes are seen.
+- **Exit:** All "fix now" findings closed by red-then-green tests, verifiers clean, round number incremented in the state file.
+- **Failure modes:** The Facilitator writes the fix file itself and gets it wrong → the fix file is a proposal; the Test Author may reject it with reasons. A fix quietly changes a behavioral contract → that is a spec amendment, not a fix; route to "Amendments". More than three rounds on one ticket → the Facilitator surfaces a scope or spec concern rather than starting round four.
 
 ### MERGE (per ticket)
 
 - **Entry:** Both reviewer roles have approved, human has read both reports.
 - **Subagent:** none.
-- **Human gate:** confirm and run the merge command yourself.
-- **Exit:** PR is merged, branch is deleted.
-- **Failure modes:** Human decides not to merge → return to whichever state matches their concern.
+- **Human gate (Gate 2):** the human walks the PR's testing steps against a running instance, then confirms and runs the merge command. The Facilitator presents the steps verbatim and asks for the result of the walk, not just "proceed". Under a standing authorization the Facilitator may run the merge command, but the walk itself is never delegated.
+- **Exit:** PR is merged, branch is deleted, the ticket's section of `reviews/phase_<N>/run_sheet.md` is updated with the merged steps.
+- **Failure modes:** Human decides not to merge → return to whichever state matches their concern. Human's walk finds something the verifiers missed → enter FIX_ROUND and note the miss in RETRO (a verifier gap is framework signal).
+
+### PHASE_ACCEPTANCE_RUN
+
+- **Entry:** All phase tickets merged. `reviews/phase_<N>/run_sheet.md` is complete: every phase-level human AC from the Done Definition has a numbered section with concrete steps and expected results, covering the whole first-run path from a clean clone, not only the new feature.
+- **Subagent:** none. This is the human's run.
+- **Human gate (Gate 3):** the human executes the run sheet against a real boot of the whole stack and signs it: date, environment, per-section pass/fail. Each section must show proof the check ran (a log line, a screenshot path, a command's output) and at least one negative control (an action that should fail, failing).
+- **Exit:** Signed run sheet committed. **No standing authorization covers this gate.**
+- **Failure modes:** A section fails → enter FIX_ROUND at phase level (`reviews/phase_<N>/PHASE_<N>_TO_FIX_round<R>.md`) and re-run the failed sections afterwards. A section cannot be executed as written → the run sheet is the defect; the Facilitator routes it to the SWE of the ticket that owns the section.
 
 ### PHASE_REVIEW
 
-- **Entry:** All phase tickets merged.
-- **Subagent:** Phase Reviewer, fresh context.
+- **Entry:** Run sheet signed.
+- **Subagent:** Phase Reviewer, fresh context. Report archived to `reviews/phase_<N>/phase_review.md`. The Phase Reviewer verifies that the run sheet was executed and signed, and sweeps for the "fifth instance" of any defect class that fell between ticket scopes.
 - **Human gate:** read the report.
-- **Exit:** Phase Reviewer report exists, human has read it.
+- **Exit:** Phase Reviewer report exists, human has read it, no blocking findings open.
 - **Failure modes:** Phase Reviewer finds cross-ticket issues → present, route to fix or accept-with-note.
 
 ### RETRO_CONSOLIDATION
@@ -227,17 +264,134 @@ For each state, the Facilitator's job is: **prepare the subagent prompt, spawn t
 
 ---
 
+## Verification of subagent claims
+
+Before presenting any gate, the Facilitator re-establishes the facts the gate depends on with its own tool calls:
+
+- Re-run the test command the subagent quoted, and compare the pass/fail counts.
+- Re-run every hard-constraint grep from the rubric.
+- `ls` or `cat` any file a subagent says it created. "Saved to `<path>`" without a tool call in the same turn is a claim, not a fact.
+- In GitHub delivery mode, read the PR's head commit from the API and confirm it equals local `HEAD` and `origin/<branch>`. A push that prints nothing is not a push that happened; check the remote.
+- Re-read the PR description against the current branch after every push.
+
+Verification is cheap and makes a stalled or crashed subagent cheap to recover from: if the work is on disk and the verification is clean, the Facilitator reports the stall, inspects the tree, and continues. It does not re-run the subagent to get a report it can reconstruct itself.
+
+What the Facilitator may substitute for and what it may not: it may redo **mechanical** checks (suites, greps, file existence, boot of the stack). It may never substitute for an **adversarial** role — Tester spot-check, PR Reviewer, Phase Reviewer. If one of those cannot be spawned, the gate waits.
+
+---
+
+## Human rulings and standing authorization
+
+**Ruling gate.** Whenever a verifier returns findings, the human rules on each one before any fix starts: fix now, defer, or route to Spec Author. The Facilitator presents the findings with stable IDs and records the rulings. It never issues a ruling and never marks one "ratified"; those words belong to the human. A "Facilitator ruling" is a framework violation.
+
+**Standing authorization.** The human may record, in the state file, an authorization for the Facilitator to advance specific gates without a per-instance confirmation when the Facilitator's own verification is clean. This exists to cut gate friction on long phases and is legitimate, with limits:
+
+- It must name the gates it covers and the condition ("advance TESTER_VERIFICATION and PR_REVIEW gates when both verdicts are `approve` and my verification is clean").
+- It may cover the mechanical gates: reading a Tester report, reading a PR Reviewer report, running the merge command, advancing to the next ticket.
+- It **never** covers the human's walk of the PR testing steps on the last ticket of a phase, the PHASE_ACCEPTANCE_RUN, a ruling gate, a spec or rubric approval, or any gate where a verdict was not `approve`.
+- Every gate advanced under it is logged as such, so the retro can see what the human did not look at.
+- It is revoked by the human saying so, and it does not carry into the next phase without being re-stated.
+
+**Conditional pre-approval** is the narrower form: "if the Tester's verdict on TICKET-007 is `approve`, proceed to PR_REVIEW without asking." Same rules, one gate, one ticket.
+
+---
+
+## Amendments
+
+The methodology's rule stands: a spec for a finished phase is not edited, it is amended. In practice most amendments during a phase are small, human-approved and urgent (a wrong field name, a guard test that now false-fails, a value pin that the new phase legitimately changes). The framework defines two paths:
+
+**Micro-amendment** (small, same phase, human-approved in chat):
+- The Facilitator applies the edit verbatim, inline, with a dated note in the spec (`> Amended YYYY-MM-DD: <what and why>`), and records it in the state file under `amendments` with a stable ID (`A-<N>`).
+- Reviewers get the amendment list as part of their inputs and check against the amended text.
+
+**Full amendment** (changes scope, a behavioral contract, a hard constraint, or an earlier phase's spec):
+- Written as `specs/amendments/YYYY-MM-DD-<slug>.md`, approved at a human gate, referenced from the spec. Never applied by the Facilitator.
+
+**Guard census.** Before any amendment that changes scope or a pinned value, the Facilitator spawns a fresh-context census of every guard test, allowlist and value pin in the repo that the change could false-fail, and attaches the list to the amendment. The handoff that says "one guard blocks this" is usually wrong by a factor of five.
+
+---
+
+## Delivery mode
+
+The bootstrap asks, and the state file records, one of two delivery modes:
+
+- **`github_pr`** — tickets are GitHub issues, the SWE opens a PR, reviewers read the PR, the human merges on GitHub. The `gh` identity to use is pinned in the state file at bootstrap.
+- **`local_branch`** — tickets are markdown files under `specs/phase_<N>/tickets/`, the SWE works on a branch and writes the PR description to `reviews/phase_<N>/pr_description_ticket_<NNN>.md`, reviewers read `git diff <base>...HEAD` plus untracked files, the human merges locally.
+
+In both modes, **subagents write files only**: no commits, no branches, no pushes, no PR creation from inside a subagent. Git mutations are the Facilitator's (under its git discipline) or the human's. The prompt templates say what to do in each mode; the Facilitator fills the mode in.
+
+---
+
+## Review artifact paths
+
+All reviewer output lives under `reviews/phase_<N>/`, on the base branch, in plain text (a report that contains a stray NUL byte is a binary file to git and to every tool after it):
+
+| Artifact | Path |
+|---|---|
+| PR description (local-branch mode) | `pr_description_ticket_<NNN>.md` |
+| Tester report | `tester_ticket_<NNN>.md` |
+| PR Reviewer report | `pr_reviewer_ticket_<NNN>.md` |
+| Fix list for a round | `TICKET-<NNN>_TO_FIX_round<R>.md` |
+| Merge notes (gate results, rulings, deferrals) | `TICKET-<NNN>_merge_notes.md` |
+| Human run sheet | `run_sheet.md` |
+| Phase fix list | `PHASE_<N>_TO_FIX_round<R>.md` |
+| Phase Reviewer report | `phase_review.md` |
+
+Evidence files written by agents (exact commands, ports, before/after assertions) go to `.facilitator/scratch/ticket_<NNN>_<role>_evidence.md`. Scratch is not committed into ticket PRs; it bloats the diff with orchestration noise.
+
+---
+
+## Subagent operating rules
+
+Every spawned role gets these rules in addition to its prompt:
+
+- One file or one command per tool call. Big batched calls hide failures.
+- No git state changes: no add, commit, branch, checkout, push, or PR creation. Never edit `.gitignore`.
+- Reviewer roles do not read `reviews/`, `RETRO.md`, or `.facilitator/` before forming a verdict.
+- Kill only processes you started, by PID. Never `pkill -f` by name.
+- Leave no stray processes behind.
+- Verifiers that share a working tree run one at a time. Two at once corrupted a committed file in a real project; use a separate worktree if they must overlap.
+- End with the structured output block the prompt specifies, and nothing after it.
+
+**Stalls.** A subagent that finishes its work and then stalls before reporting is common. The Facilitator inspects the tree, verifies as above, and reconstructs what it can. It does not re-run the subagent unless the work itself is missing.
+
+---
+
+## Sub-phases and post-phase work
+
+A phase may be split into sub-phases (`1a`, `1b`, `5a`–`5e`) when the human and the Spec Author agree the end-to-end slice is too large for one review cycle. Each sub-phase runs the full state machine, including its own run sheet. The state file's `current_phase` carries the sub-phase label.
+
+Feature specs that arrive after a phase closes and before the next phase opens (a "fast follow", a hotfix) are not run outside the framework. They get a sub-phase label (`<N>-ff1`, `<N>-hotfix1`), a spec under `specs/`, and at minimum a Tester, a PR Reviewer, and the human's walk of the testing steps.
+
+---
+
+## Resume prompt
+
+At every phase boundary, and whenever the human asks, the Facilitator refreshes `.facilitator/START_HERE.md`: a self-contained prompt the human pastes to resume, naming the files to read in order, the locked decisions, the delivery mode, and the open gate. The template is `templates/START_HERE.md`. A stale START_HERE is worse than none; the Facilitator dates it and checks the date at startup.
+
+---
+
 ## State file
 
 The Facilitator maintains `.facilitator/state.json` in the project repo. Schema (informal):
 
 ```json
 {
-  "framework_version": "0.2.0",
+  "framework_version": "0.3.0",
   "project_name": "Example Project",
-  "current_phase": 1,
+  "delivery_mode": "github_pr",
+  "gh_identity": "<github username, github_pr mode only>",
+  "worker_models": {"spec_author": "opus", "pm": "opus", "test_author": "sonnet", "swe": "sonnet", "tester": "sonnet", "pr_reviewer": "opus", "phase_reviewer": "opus"},
+  "current_phase": "1",
   "current_state": "TESTER_VERIFICATION",
   "current_ticket": "TICKET-003",
+  "stage_plan": {
+    "TICKET-003": {"TEST_AUTHORING": true, "IMPLEMENTATION": true, "TESTER_VERIFICATION": false, "PR_REVIEW": false, "MERGE": false}
+  },
+  "fix_rounds": {"TICKET-002": 1},
+  "amendments": [{"id": "A-1", "date": "2026-05-18", "spec": "specs/PHASE_1_FOUNDATION.md", "summary": "AC-4 field renamed"}],
+  "standing_authorization": null,
+  "run_sheet": {"path": "reviews/phase_1/run_sheet.md", "signed": false},
   "last_action": {
     "state": "IMPLEMENTATION",
     "timestamp": "2026-05-19T22:14:00Z",
@@ -261,6 +415,14 @@ The Facilitator maintains `.facilitator/state.json` in the project repo. Schema 
 
 The Facilitator reads this at startup and updates it after every action. The human can read it too — it's the system-of-record for "what's the current state of this project."
 
+Rules that keep it a state file and not a diary:
+
+- `current_state` is one of the state-machine names above. Never prose. If no name fits, that is a framework gap to surface, not a reason to invent `PHASE_1_FIX_ROUND_COMPLETE_AWAITING_AC13`.
+- `open_human_gate` is the object above, never a string.
+- The **stage plan** is the anti-skip device: one boolean per state per ticket, ticked when the state's exit condition is met. A ticket cannot enter MERGE with any earlier box unticked. This exists because a real project skipped PR_REVIEW on a ticket and nothing noticed until the human asked.
+- No narrative. Retro-grade notes go to `RETRO.md`; decisions go to the decision log (see `SPEC_DRIVEN_BUILD_FRAMEWORK.md`, "Decision log"); the state file holds pointers and booleans.
+- **Compaction at phase end:** when a phase closes, its per-ticket entries move to `.facilitator/archive/state_phase_<N>.json` and the live file keeps only the summary line per ticket. A state file past a few hundred lines is a symptom.
+
 If the state file disagrees with the filesystem (e.g., state says a PR exists but it doesn't, or vice versa), the Facilitator stops and asks the human rather than guessing.
 
 ---
@@ -279,6 +441,8 @@ The Facilitator maintains `.facilitator/log.md` — append-only log of orchestra
 ```
 
 The log is also retro input: when retro asks "where did we lose time this phase," the log answers.
+
+The log append is part of the same step as the state file update (operating principle 10). Every gate advanced under a standing authorization is logged with `[standing-auth]`. The log is the first discipline that gets dropped on a long phase in every project that has run this framework, which is why it is tied to the state update rather than left as a separate habit.
 
 ---
 
@@ -340,15 +504,21 @@ This is the conversational front door. It exists so that resuming work after a g
 
 ---
 
-## Open questions for v0.2.0
+## What use has answered (0.2.0 → 0.3.0)
 
-These will be answered by use, not by design:
+The open questions from 0.2.0, answered by five projects:
 
-- How well does subagent spawning actually work in practice? If subagent isolation is poor (subagents inheriting context they shouldn't), some roles fall back to human-driven spawning with a clear caveat in RETRO.
-- How heavy is the state file in practice? If it gets unwieldy, parts move to filesystem-derived state.
-- How often does the Facilitator hit "I'm not sure" moments? Many → framework has gaps. Few → framework is robust. Zero → the Facilitator might be papering over decisions it shouldn't.
-- Are structured subagent outputs sufficient, or does the Facilitator still find itself paraphrasing? If paraphrasing creeps in, the prompt templates need tightening.
-- Should the human be able to "rewind" to a prior state cleanly (e.g., "I want to redo the SWE work on TICKET-003 from scratch")? The state file can support this but the UX needs use to inform.
+- **Subagent isolation holds.** Fresh-context reviewers found real defects in work the Facilitator had just presented as clean, which is the behavior isolation is supposed to produce. The failure mode that did appear was the opposite: subagents that stall after finishing, which is now handled by inspection rather than re-spawn.
+- **The state file gets unwieldy.** One project reached 985 lines with `current_state` as a paragraph of prose. Hence the state-file rules and phase-end compaction above.
+- **"I'm not sure" moments were common and the Facilitator papered over them.** The recurring pattern was the Facilitator inventing a state name, a gate type, or a ruling rather than asking. Hence the closed vocabulary for `current_state`, the ruling gate, and the explicit standing-authorization rules.
+- **Structured outputs work, with one gap:** the testing steps were never a field, so the human gate could be presented without them. Fixed in 0.3.0.
+- **Rewind** was not needed; fix rounds were. The state machine now has them.
+
+## Open questions for 0.3.x
+
+- Does the stage plan actually prevent skipped stages, or does it get ticked reflexively?
+- Is three fix rounds the right ceiling before escalation?
+- Does the run sheet stay honest when the same human writes the spec, walks the sheet, and signs it?
 
 ---
 
