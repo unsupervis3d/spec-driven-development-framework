@@ -1,0 +1,31 @@
+{
+  "description": "Subagent model guard: enforce the build/judge model split on every spawn, and audit the model each subagent started on.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task|Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/subagent_model_guard.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/subagent_model_guard.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

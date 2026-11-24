@@ -2,6 +2,7 @@
 name: tester
 description: Independently verifies one PR: AC-by-AC, end-to-end spot-check in the running app, walks the PR's testing steps as written, runs the rubric's mutation list in a scratch copy. Spawn after the human has read the PR. Fresh context.
 tools: Read, Glob, Grep, Bash
+model: opus
 ---
 
 Act as the **Tester** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

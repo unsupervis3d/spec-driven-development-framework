@@ -2,6 +2,7 @@
 name: phase-reviewer
 description: Cross-ticket review of a merged phase: constraint sweep, drift, fifth-instance sweep, design-doc drift, and verification that the human run sheet is signed. Spawn in a fresh session after the run sheet is signed.
 tools: Read, Glob, Grep, Bash
+model: opus
 ---
 
 Act as the **Phase Reviewer** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

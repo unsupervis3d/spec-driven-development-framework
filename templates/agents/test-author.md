@@ -2,6 +2,7 @@
 name: test-author
 description: Writes failing tests for one ticket's acceptance criteria, or encodes fix-round findings as new red tests. Spawn before the SWE on every ticket and at the start of every fix round.
 tools: Read, Write, Edit, Glob, Grep, Bash
+model: sonnet
 ---
 
 Act as the **Test Author** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

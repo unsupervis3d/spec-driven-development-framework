@@ -8,7 +8,7 @@ This repo holds the framework itself: the methodology, the agent roster, the Fac
 
 ## Status
 
-**Version:** 0.3.0
+**Version:** 0.3.1
 **Maturity:** Active development. The framework has run five real projects end to end, one of them through more than twenty phases, and 0.3.0 is the release that folds their lessons back in. New projects start on the Facilitator path from day one.
 
 Expect breaking changes between 0.x versions. The framework is tagged at each meaningful revision so projects can pin to a known version.
@@ -33,6 +33,7 @@ Expect breaking changes between 0.x versions. The framework is tagged at each me
   - `START_HERE.md` — the resume prompt the Facilitator refreshes at every phase boundary.
   - `agents/` — the worker roles as Claude Code subagent files, an alternative to pasting prompts.
   - `commands/` — slash commands for the lightweight pattern.
+- **`plugins/subagent-model-guard/`** — a Claude Code plugin that denies any subagent spawn or Workflow agent that would run on the wrong model for its role, and audits the model each one actually started on, so the build/judge split holds under auto-approve. This repo is also the plugin's marketplace (`.claude-plugin/marketplace.json`).
 - **`lightweight/`** — pared-down adaptations for ticket-scale work in existing codebases, where humans already play most of the roles. Keeps the one gate you can't drop.
 - **`CHANGELOG.md`** — what changed between versions and why.
 
@@ -48,13 +49,14 @@ The underlying problems, though, are widely shared. If you build software with L
 
 ## Quick start
 
-For a new project on framework v0.3.0:
+For a new project on framework v0.3.1:
 
-1. Create the project repo. Empty.
-2. Copy `templates/CLAUDE.md` to the project root, fill placeholders.
-3. Copy `templates/PROJECT_OVERVIEW.md` to the project root and fill it in. This is the highest-leverage artifact in the whole framework — don't rush it.
-4. Open a Claude Code session in the project repo. Paste `templates/facilitator_bootstrap.md`.
-5. The Facilitator takes over: tells you what's next, spawns agent subagents, surfaces human gates.
+1. Install the model guard once per machine: `/plugin marketplace add <owner>/<repo>` (this repository, or your org's fork), then `/plugin install subagent-model-guard@spec-driven-build`. For an org-wide rollout users can't disable, see `plugins/subagent-model-guard/README.md`.
+2. Create the project repo. Empty.
+3. Copy `templates/CLAUDE.md` to the project root, fill placeholders.
+4. Copy `templates/PROJECT_OVERVIEW.md` to the project root and fill it in. This is the highest-leverage artifact in the whole framework — don't rush it.
+5. Open a Claude Code session in the project repo. Paste `templates/facilitator_bootstrap.md`.
+6. The Facilitator takes over: tells you what's next, spawns agent subagents, surfaces human gates.
 
 Resume later by opening a Claude Code session and asking the Facilitator "where are we."
 

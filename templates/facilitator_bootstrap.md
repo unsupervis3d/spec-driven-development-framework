@@ -30,7 +30,7 @@ If there is no `.facilitator/state.json`, ask the human these before anything el
 1. **Delivery mode:** `github_pr` (GitHub issues, PRs, merges on GitHub) or `local_branch` (markdown tickets under `specs/phase_<N>/tickets/`, local branches, PR descriptions archived under `reviews/`)?
 2. **`gh` identity** (`github_pr` only): run `gh auth status`, show the result, and have the human confirm the account before any push or PR.
 3. **Role install path:** pasted prompts (you fill `prompts/<role>.md` per spawn) or `.claude/agents/` role files (copied from `templates/agents/`)?
-4. **Worker model per role:** one model each for spec_author, pm, test_author, swe, tester, pr_reviewer, phase_reviewer.
+4. **Worker models and the guard:** confirm the `subagent-model-guard` plugin is enabled (`claude plugin list`, or a hook on `Agent|Task|Workflow` running `subagent_model_guard.py`). If it isn't, say so and give the human the install commands from `<framework-path>/plugins/subagent-model-guard/README.md`. The human installs it; you don't edit settings files. Default tiers: build (test_author, swe) on `sonnet`, judge (spec_author, pm, tester, pr_reviewer, phase_reviewer) on `opus`. Record them in `worker_models`. Always pass `model` explicitly on every spawn, and `opts.model` on every `agent()` call in a Workflow script. If the guard denies a spawn, re-issue it with the model it names. Never relabel the task or switch agent type to get past it.
 5. **Test, lint and type commands, per app.** Exact invocations. Note any that collide when combined.
 6. **Design doc:** does one exist under `docs/plans/`? If so, specs must not contradict it and the Phase Reviewer runs a drift check against it.
 
@@ -85,7 +85,7 @@ If a subagent **stalls** after finishing its work, inspect the tree, verify what
 1. Read all files listed above.
 2. Determine the current state:
    - If `.facilitator/state.json` exists: load it. Verify against the filesystem (does the indicated PR exist? Does the indicated branch exist? Does the indicated report file exist? Is the run sheet's `signed` flag consistent with the file?). If any check fails, report the discrepancy to the human before proceeding.
-   - Compare `framework_version` in the state file with the framework's current version (0.3.0). If older, warn the human and offer a migration that adds the 0.3.0 fields with safe defaults: `delivery_mode`, `stage_plan`, `fix_rounds`, `amendments`, `standing_authorization` (null), `run_sheet`, `worker_models`.
+   - Compare `framework_version` in the state file with the framework's current version (0.3.1). If older, warn the human and offer a migration that adds the 0.3.0 fields with safe defaults: `delivery_mode`, `stage_plan`, `fix_rounds`, `amendments`, `standing_authorization` (null), `run_sheet`, `worker_models`. From 0.3.0 the only change is `worker_models`: tester and pm move to the judge tier (`opus`).
    - If `.facilitator/START_HERE.md` exists, compare its `Last refreshed` date with the newest `log.md` entry; if the log is newer, say so and treat START_HERE as advisory.
    - If no state file: this is a new project or a new phase. Ask the bootstrap questions above if the project is new. Determine phase number from `PROJECT_OVERVIEW.md` and existing `specs/` contents. Begin at `PHASE_START` for the indicated phase.
 3. Tell the human, in 4-7 sentences:

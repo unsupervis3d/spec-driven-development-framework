@@ -2,6 +2,7 @@
 name: pr-reviewer
 description: Adversarial cold-context review of one PR against the ticket, the rubric, and the hard constraints. Spawn in a fresh session after the Tester approves; on fix rounds, spawn with the prior report attached for a delta review.
 tools: Read, Glob, Grep, Bash
+model: opus
 ---
 
 Act as the **PR Reviewer** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

@@ -29,6 +29,8 @@ The script does NOT:
       the section header is present.
 """
 
+from __future__ import annotations
+
 import argparse
 import re
 import shutil
@@ -105,6 +107,13 @@ EXPECTED_FILES = {
     "templates/agents/pr-reviewer.md": [],
     "templates/agents/phase-reviewer.md": [],
     "templates/commands/ticket.md": [],
+    ".claude-plugin/marketplace.json": ["subagent-model-guard"],
+    "plugins/subagent-model-guard/.claude-plugin/plugin.json": [],
+    "plugins/subagent-model-guard/hooks/hooks.json": ["${CLAUDE_PLUGIN_ROOT}/scripts/subagent_model_guard.py"],
+    "plugins/subagent-model-guard/README.md": [],
+    "plugins/subagent-model-guard/scripts/subagent_model_guard.py": [],
+    "plugins/subagent-model-guard/scripts/subagent_model_policy.json": [],
+    "plugins/subagent-model-guard/scripts/test_subagent_model_guard.py": [],
     "templates/commands/review.md": [],
     "templates/commands/ticket-status.md": [],
     "prompts/spec_author.md": [
@@ -167,6 +176,8 @@ def expected_files_for(version: str | None) -> dict[str, list[str]]:
     if version:
         expected["README.md"].append(f"Version:** {version}")
         expected["CHANGELOG.md"].append(f"[{version}]")
+        # The plugin pins its version; users only receive an update when this string changes.
+        expected["plugins/subagent-model-guard/.claude-plugin/plugin.json"].append(f'"version": "{version}"')
         for rel in VERSIONED_LIGHTWEIGHT_FILES:
             expected.setdefault(rel, []).append(f"framework-version: {version}")
     return expected

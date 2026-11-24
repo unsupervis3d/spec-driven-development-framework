@@ -4,6 +4,51 @@ All notable changes to the spec-driven-build framework are documented here. The 
 
 ---
 
+## [0.3.1] — 2026-11-24
+
+Enforcement of the role-to-model split. Until now the split was a recommendation, and usage data showed it being ignored.
+
+### Added
+
+- **`subagent-model-guard` plugin** (`plugins/subagent-model-guard/`). This repository is also its marketplace (`.claude-plugin/marketplace.json`, marketplace name `spec-driven-build`), so installing is `/plugin marketplace add <owner>/<repo>` then `/plugin install subagent-model-guard@spec-driven-build`. What it does:
+  - **Spawn check.** A `PreToolUse` check on `Agent`, `Task` and `Workflow` classifies every subagent spawn by role and denies it if its effective model is outside the role's tier. Roles are recognised from the agent name (including plugin agents such as `*:code-reviewer` or `*-analyzer`), the description, the prompt's opening, or an instruction to follow a role template or emit its output block.
+  - **Tiers.** The build tier (`swe`, `test-author`, implementer, CI monitor) runs on `sonnet`. The judge tier (`spec-author`, `pm`, planner, `tester`, `pr-reviewer`, `phase-reviewer`, any reviewer) runs on `opus` or `fable`.
+  - **Everything else.** Unroled spawns must name a model explicitly. Role work in a fork is denied. Every `agent()` call in a Workflow script must pass `opts.model`.
+  - **Audit.** A `PostToolUse` audit compares each subagent's `resolvedModel` with its tier and reports a mismatch to the session as unverified work.
+  - **Policy.** Layered: bundled defaults, then the user's `<config dir>/subagent_model_policy.json`, then an org's copy in the managed-settings directory, which wins so users can't loosen it.
+  - **Behaviour.** Fails open on internal errors. Logs every decision (never prompts) to `<config dir>/logs/`.
+  - **Org rollout.** Managed `extraKnownMarketplaces` plus `enabledPlugins`. Users can't disable a managed-enabled plugin, and its hooks run even under `allowManagedHooksOnly`.
+  - **Tests.** `scripts/test_subagent_model_guard.py`, standard library only.
+
+### Changed
+
+- Role files in `templates/agents/` pin `model:` in frontmatter (`sonnet` for build roles, `opus` for judge roles). Previously models lived only in `CLAUDE.md` and `state.json`.
+- Tester and PM move to the judge tier (`worker_models.tester` and `.pm`: `opus`). The tester is the first verifier of the SWE's work and should not share a tier with the writer it checks.
+- `FACILITATOR.md` "Subagent operating rules", `templates/CLAUDE.md`, `templates/facilitator_bootstrap.md` and `USING_THE_FRAMEWORK.md` require an explicit model on every spawn and every Workflow `agent()` call, and point at the `subagent-model-guard` plugin.
+- `verify_framework.py` runs on Python 3.9.
+
+### Design rationale
+
+Usage data from the downstream projects showed the role-to-model table ignored in every way it could be:
+- role files with no `model:` line;
+- role prompts pasted into `general-purpose` agents with no model;
+- implementers spawned on the reviewer model;
+- reviewers spawned on the implementer model.
+
+In each case the subagent ran on whatever the orchestrator ran on, which is usually the most expensive model. Fixing it in prose had already failed, so the rule is now a hook, which runs in every permission mode.
+
+Denying a spawn is cheaper than correcting it after it runs: the caller re-issues the call at once with the named model, and nothing runs on the wrong tier in the meantime.
+
+It ships as a plugin, not a skill or an install script. A skill is guidance Claude can ignore, which is the failure being fixed. An install script asks people to run code that edits their settings, and leaves no clean update path. A plugin registers its own hooks, updates through `/plugin`, and is the unit an org can force-enable from managed settings. Only that managed rollout is tamper-proof. A user-installed plugin can be disabled by its user, and the README says so.
+
+### Migration from 0.3.0
+
+1. Install the guard: `/plugin marketplace add <owner>/<repo>`, then `/plugin install subagent-model-guard@spec-driven-build` (or the managed rollout in `plugins/subagent-model-guard/README.md`).
+2. Add `model:` lines to any `.claude/agents/` role files (see `templates/agents/`).
+3. Set `worker_models.tester` and `worker_models.pm` to `opus` in `.facilitator/state.json`.
+
+---
+
 ## [0.3.0] — 2026-10-27
 
 The verification release. Five projects ran 0.2.0 (one through twenty-two phases); this release folds back what they learned. The theme: the pipeline could go green end to end while the human gate quietly lost its inputs. 0.3.0 makes the human-run check a first-class artifact at both the PR and the phase level, gives the Facilitator a verification duty instead of a trust relationship, and names the things every project invented on its own (fix rounds, rulings, standing authorization, amendments, local-branch delivery).

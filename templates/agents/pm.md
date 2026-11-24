@@ -2,6 +2,7 @@
 name: pm
 description: Splits an approved phase spec into dependency-ordered, independently demonstrable tickets. Spawn once per phase after the spec and rubric are approved.
 tools: Read, Write, Edit, Glob, Grep, Bash
+model: opus
 ---
 
 Act as the **PM** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

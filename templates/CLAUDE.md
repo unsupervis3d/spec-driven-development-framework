@@ -10,7 +10,7 @@ The framework repository lives at: `<absolute path to framework repo on this mac
 
 - **Delivery mode:** `<github_pr | local_branch>`. <github_pr only: the `gh` identity for this project is `<identity>`; confirm with `gh auth status` before any push or PR.>
 - **Role install path:** `<pasted prompts via the Facilitator | .claude/agents/ (copied from <framework-path>/templates/agents/)>`.
-- **Worker models:** spec_author `<model>`, pm `<model>`, test_author `<model>`, swe `<model>`, tester `<model>`, pr_reviewer `<model>`, phase_reviewer `<model>`. Reviewer roles get the strongest model you can afford.
+- **Worker models:** build tier (test_author, swe) `sonnet`; judge tier (spec_author, pm, tester, pr_reviewer, phase_reviewer) `opus`. Enforced, not advisory: the `subagent-model-guard` plugin (`<framework-path>/plugins/subagent-model-guard/`) denies any spawn whose model breaks this. Install it with `/plugin marketplace add <framework repo>` then `/plugin install subagent-model-guard@spec-driven-build`. Every spawn names its model, and so does every Workflow `agent()` call. Nothing inherits the session model.
 
 The recommended way to do work on this project is via the **Facilitator** — an orchestrator session that holds the framework knowledge so you don't have to. To begin (or resume) work:
 

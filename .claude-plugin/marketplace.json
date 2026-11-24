@@ -1,0 +1,12 @@
+{
+  "name": "spec-driven-build",
+  "description": "Claude Code plugins for the spec-driven-build framework.",
+  "owner": { "name": "spec-driven-build framework" },
+  "plugins": [
+    {
+      "name": "subagent-model-guard",
+      "source": "./plugins/subagent-model-guard",
+      "description": "Enforce the role-to-model split on every subagent spawn and Workflow agent."
+    }
+  ]
+}

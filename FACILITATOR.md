@@ -343,6 +343,8 @@ Evidence files written by agents (exact commands, ports, before/after assertions
 
 ## Subagent operating rules
 
+Every spawn passes `model` explicitly from `worker_models`: build tier (test_author, swe) on `sonnet`, judge tier (spec_author, pm, tester, pr_reviewer, phase_reviewer) on `opus`. A subagent with no model inherits the Facilitator's, which is usually the most expensive one available. The same holds for `agent()` calls in a Workflow script: pass `opts.model` as a string literal. The `subagent-model-guard` plugin (`plugins/subagent-model-guard/`) enforces both as a `PreToolUse` hook and audits the model each subagent actually started on. A denial names the model to pass. Re-issue the call with that model, and never get around a denial by relabelling the task, switching agent type, or using a fork. Role work never runs in a fork, because forks always inherit the session model.
+
 Every spawned role gets these rules in addition to its prompt:
 
 - One file or one command per tool call. Big batched calls hide failures.
@@ -377,11 +379,11 @@ The Facilitator maintains `.facilitator/state.json` in the project repo. Schema 
 
 ```json
 {
-  "framework_version": "0.3.0",
+  "framework_version": "0.3.1",
   "project_name": "Example Project",
   "delivery_mode": "github_pr",
   "gh_identity": "<github username, github_pr mode only>",
-  "worker_models": {"spec_author": "opus", "pm": "opus", "test_author": "sonnet", "swe": "sonnet", "tester": "sonnet", "pr_reviewer": "opus", "phase_reviewer": "opus"},
+  "worker_models": {"spec_author": "opus", "pm": "opus", "test_author": "sonnet", "swe": "sonnet", "tester": "opus", "pr_reviewer": "opus", "phase_reviewer": "opus"},
   "current_phase": "1",
   "current_state": "TESTER_VERIFICATION",
   "current_ticket": "TICKET-003",

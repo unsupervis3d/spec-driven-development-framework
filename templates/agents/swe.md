@@ -2,6 +2,7 @@
 name: swe
 description: Implements one ticket against its failing tests, writes the PR description with numbered human testing steps, and updates the run sheet section. Spawn after the Test Author's tests are approved.
 tools: Read, Write, Edit, Glob, Grep, Bash
+model: sonnet
 ---
 
 Act as the **SWE** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

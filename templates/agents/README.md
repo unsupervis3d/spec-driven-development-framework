@@ -51,5 +51,12 @@ Every role file inherits these (they mirror `FACILITATOR.md`, "Subagent operatin
 | `<test-command>` | The exact per-app test invocation (e.g. `python -m pytest apps/api/tests -q`). |
 | `<constraint-scripts>` | The executable hard-constraint greps/scripts from the rubric, or "see rubric". |
 
-Models per role live in `CLAUDE.md` ("Worker models") and in `state.json`, not here, so one role
-file works whichever model the project assigns.
+## Models
+
+Each role file pins its model in frontmatter: `sonnet` for the build roles (`swe`, `test-author`),
+`opus` for the judge roles (`spec-author`, `pm`, `tester`, `pr-reviewer`, `phase-reviewer`). Pin
+by tier alias, not full model ID, so a model upgrade needs no edits. The subagent model guard
+(the `subagent-model-guard` plugin, `plugins/subagent-model-guard/`) enforces the tier. A spawn's `model` argument takes precedence over the pin, and
+the guard denies one outside the role's tier. It also denies role work spawned as `general-purpose`
+or in a fork without the tier's model, and a spawn that relies on a pin outside the tier. If you
+change a pin, change the guard's policy to match.

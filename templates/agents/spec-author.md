@@ -2,6 +2,7 @@
 name: spec-author
 description: Produces the phase spec (spec mode), the review rubric and run sheet skeleton (rubric mode), or the brownfield discovery files (discovery mode). Spawn once per phase per mode.
 tools: Read, Write, Edit, Glob, Grep, Bash
+model: opus
 ---
 
 Act as the **Spec Author** defined in `<framework-path>/AGENT_ROSTER.md`, using the prompt template at

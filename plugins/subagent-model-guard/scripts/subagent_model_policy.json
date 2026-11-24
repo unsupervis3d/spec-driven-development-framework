@@ -1,0 +1,23 @@
+{
+  "_comment": "Policy for subagent_model_guard.py (same directory). Keys you omit fall back to the defaults in the script. Tiers list allowed models, most preferred first; a denial tells the caller to pass the first. See README.md.",
+  "tiers": {
+    "build": ["sonnet"],
+    "judge": ["opus", "fable"]
+  },
+  "roles": {
+    "swe": "build",
+    "test-author": "build",
+    "implementer": "build",
+    "ci-monitor": "build",
+    "spec-author": "judge",
+    "pm": "judge",
+    "planner": "judge",
+    "tester": "judge",
+    "pr-reviewer": "judge",
+    "phase-reviewer": "judge",
+    "reviewer": "judge"
+  },
+  "unroled_allowed": ["haiku", "sonnet", "opus", "fable"],
+  "check_workflows": true,
+  "allow_env_disable": true
+}
