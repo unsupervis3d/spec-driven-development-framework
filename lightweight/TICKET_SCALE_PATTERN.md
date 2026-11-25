@@ -1,4 +1,4 @@
-<!-- framework-version: 0.3.1 -->
+<!-- framework-version: 0.4.0 -->
 <!-- file-role: lightweight-pattern -->
 
 # Ticket-Scale Pattern — Lightweight Adaptation Reference
@@ -40,10 +40,11 @@ gate is the part you cannot drop.
 
 ## Workflow
 
-Three slash commands drive the pattern: `/ticket <N>`, `/review <PR>`, and `/ticket-status [<N>]`.
-Generic versions live in the framework repo under `templates/commands/`; copy them into the
-project's `.claude/commands/` and fill the placeholders. Each command reads its prompt file fresh
-at spawn time so the prompt files stay the single source of truth.
+Three commands drive the pattern: `/spec-driven-build:ticket <N>`, `/spec-driven-build:review <PR>`,
+and `/spec-driven-build:ticket-status [<N>]`, from the `spec-driven-build` plugin (`skills/` in the
+framework repo). Each project records its specifics (how to fetch a work unit, where the constraints
+file lives, how to link a PR) in the "Lightweight settings" section of its `CLAUDE.md`. Each command
+reads its prompt file fresh at spawn time so the prompt files stay the single source of truth.
 
 ```
 /ticket <N>

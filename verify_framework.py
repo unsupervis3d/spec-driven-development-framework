@@ -82,7 +82,8 @@ EXPECTED_FILES = {
     ],
     "templates/CLAUDE.md": [
         "spec-driven-build framework",
-        "facilitator_bootstrap.md",
+        "/spec-driven-build:facilitator",
+        "Lightweight settings",
     ],
     "templates/PROJECT_OVERVIEW.md": [
         "PROJECT_OVERVIEW",
@@ -91,31 +92,36 @@ EXPECTED_FILES = {
     "templates/RETRO.md": [
         "Retro Notes",
     ],
-    "templates/facilitator_bootstrap.md": [
-        "You are the Facilitator",
-        "Startup sequence",
-    ],
     "templates/run_sheet.md": [],
     "templates/START_HERE.md": [],
     "templates/DECISIONS.md": [],
-    "templates/agents/README.md": [],
-    "templates/agents/spec-author.md": [],
-    "templates/agents/pm.md": [],
-    "templates/agents/test-author.md": [],
-    "templates/agents/swe.md": [],
-    "templates/agents/tester.md": [],
-    "templates/agents/pr-reviewer.md": [],
-    "templates/agents/phase-reviewer.md": [],
-    "templates/commands/ticket.md": [],
-    ".claude-plugin/marketplace.json": ["subagent-model-guard"],
+    "templates/org/managed-settings.json": ["spec-driven-build@spec-driven-build-plugins"],
+    "templates/org/CLAUDE.md": [],
+    "templates/org/subagent_model_policy.json": [],
+    "ORG_ROLLOUT.md": [],
+    ".claude-plugin/plugin.json": [],
+    "agents/spec-author.md": ["model: opus"],
+    "agents/pm.md": ["model: opus"],
+    "agents/test-author.md": ["model: sonnet"],
+    "agents/swe.md": ["model: sonnet"],
+    "agents/tester.md": ["model: opus"],
+    "agents/pr-reviewer.md": ["model: opus"],
+    "agents/phase-reviewer.md": ["model: opus"],
+    "skills/new-project/SKILL.md": [],
+    "skills/facilitator/SKILL.md": [],
+    "skills/ticket/SKILL.md": [],
+    "skills/review/SKILL.md": [],
+    "skills/ticket-status/SKILL.md": [],
+    "hooks/hooks.json": ["${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py"],
+    "hooks/session_start.py": [],
+    "hooks/test_session_start.py": [],
+    ".claude-plugin/marketplace.json": ["spec-driven-build-plugins", "subagent-model-guard"],
     "plugins/subagent-model-guard/.claude-plugin/plugin.json": [],
     "plugins/subagent-model-guard/hooks/hooks.json": ["${CLAUDE_PLUGIN_ROOT}/scripts/subagent_model_guard.py"],
     "plugins/subagent-model-guard/README.md": [],
     "plugins/subagent-model-guard/scripts/subagent_model_guard.py": [],
     "plugins/subagent-model-guard/scripts/subagent_model_policy.json": [],
     "plugins/subagent-model-guard/scripts/test_subagent_model_guard.py": [],
-    "templates/commands/review.md": [],
-    "templates/commands/ticket-status.md": [],
     "prompts/spec_author.md": [
         "## Structured output",
         "role: spec_author",
@@ -178,6 +184,7 @@ def expected_files_for(version: str | None) -> dict[str, list[str]]:
         expected["CHANGELOG.md"].append(f"[{version}]")
         # The plugin pins its version; users only receive an update when this string changes.
         expected["plugins/subagent-model-guard/.claude-plugin/plugin.json"].append(f'"version": "{version}"')
+        expected[".claude-plugin/plugin.json"].append(f'"version": "{version}"')
         for rel in VERSIONED_LIGHTWEIGHT_FILES:
             expected.setdefault(rel, []).append(f"framework-version: {version}")
     return expected

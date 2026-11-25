@@ -1,0 +1,9 @@
+{
+  "name": "spec-driven-build",
+  "displayName": "Spec-Driven Build",
+  "version": "0.4.0",
+  "description": "A spec-driven way to build software with Claude: a new-project scoping interview, a Facilitator that runs phases through human gates, seven worker roles on pinned models, and lightweight ticket commands for existing codebases.",
+  "author": { "name": "spec-driven-build framework" },
+  "license": "MIT",
+  "keywords": ["spec-driven", "workflow", "subagents", "code-review", "human-in-the-loop", "planning"]
+}

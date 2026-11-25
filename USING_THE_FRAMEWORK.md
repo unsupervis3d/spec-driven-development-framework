@@ -8,24 +8,50 @@ The deep methodology is in `SPEC_DRIVEN_BUILD_FRAMEWORK.md`; the agent details a
 
 ## Where the framework lives
 
-The framework repo lives at a stable path on your machine. Pick one and commit to it. Suggested: `~/projects/spec-driven-development-framework/`.
+The framework installs as the `spec-driven-build` Claude Code plugin. Skills, agents and prompt
+templates are read from the plugin's own copy, so a project needs no clone and no paths. Install it,
+and the `subagent-model-guard` plugin that enforces the role-to-model split, once per machine:
 
-Every project's `CLAUDE.md` and Facilitator bootstrap reference that absolute path. If the framework moves, every project's pointers need to be updated — so don't move it.
+```
+/plugin marketplace add <owner>/<repo>
+/plugin install spec-driven-build@spec-driven-build-plugins
+/plugin install subagent-model-guard@spec-driven-build-plugins
+```
 
-If you work across multiple machines, use the same path on each, or symlink so the canonical path resolves everywhere.
+`<owner>/<repo>` is this repository, or your org's fork. Orgs can install both for everyone from
+managed settings; see `ORG_ROLLOUT.md`.
+
+You only need a clone to change the framework itself, or for the manual path below. In that case,
+keep it at a stable path, because pasted prompts reference it.
 
 ---
 
 ## Bootstrapping a new project
 
-1. **Create the project repo.** `git init`, a one-line README, optionally a GitHub remote.
-2. **Copy `templates/CLAUDE.md`** from the framework repo into the project repo root. Rename to `CLAUDE.md`. Fill in the placeholders (framework version, framework path, project state, delivery mode, role install path, worker models).
-3. **Answer the bootstrap questions** (they are listed in `templates/facilitator_bootstrap.md`; the Facilitator asks them on a new project): delivery mode (`github_pr` or `local_branch`), the `gh` identity if `github_pr`, the role install path, the worker model tiers (and install the `subagent-model-guard` plugin so they are enforced; `plugins/subagent-model-guard/README.md` covers the per-user install and an org-wide rollout users can't disable), the exact test/lint/type commands per app, and whether a design doc exists under `docs/plans/`.
-4. **Choose a role install path.** Either the Facilitator fills `prompts/<role>.md` per spawn (nothing to install), or copy `templates/agents/` to the project's `.claude/agents/` and fill its placeholders so each role is spawnable by name with a harness-enforced tool allowlist. The two are equivalent; `CLAUDE.md` records which one the project uses.
-5. **Write `PROJECT_OVERVIEW.md`** in the project repo root, starting from `templates/PROJECT_OVERVIEW.md`. This is the highest-leverage artifact in the whole framework. Do not skip steps to get to coding. It typically takes one or more focused sessions, not a few minutes. On a brownfield project, run the Spec Author in discovery mode first so the "Existing components" section comes from `discovery/INVENTORY.md`, not memory. Fill "How a human verifies a phase"; every phase's run sheet starts from it.
-6. **Create `RETRO.md`** from `templates/RETRO.md` and **`DECISIONS.md`** from `templates/DECISIONS.md` in the project repo root. Append to both as you go; specs and tickets cite `D-<n>` IDs instead of restating decisions.
-7. **Create `specs/` and `reviews/` directories.** Phase specs, rubrics and `specs/amendments/` go in `specs/`; reviewer reports, fix lists and the phase's `run_sheet.md` go in `reviews/phase_<N>/` (the full path table is in `FACILITATOR.md`, "Review artifact paths").
-8. **Commit everything.** Tag `framework-bootstrap` so you can find it later.
+1. **Create the project repo** (`git init`) and open Claude Code in it. The plugin sees an empty repo
+   and offers the scoping interview.
+2. **Run `/spec-driven-build:new-project`.** It interviews you in rounds:
+   - what the project is and is not, and who uses it;
+   - the core loop, and **how a human will verify each phase**;
+   - stack, data entities and hard constraints, which it pushes to be checkable by a script;
+   - a phase plan of end-to-end slices;
+   - success criteria, the delivery mode (`github_pr` or `local_branch`, plus the `gh` identity if
+     `github_pr`), the test, lint and type commands, and any design doc.
+
+   It then creates `CLAUDE.md`, a draft `PROJECT_OVERVIEW.md`, `DECISIONS.md`, `RETRO.md`,
+   `specs/`, `specs/amendments/` and `reviews/phase_1/`. On a brownfield project it also creates
+   `discovery/` and leaves "Existing components" to the Spec Author's discovery pass, so it comes
+   from the code, not from memory.
+3. **Approve `PROJECT_OVERVIEW.md`** section by section. This is the highest-leverage artifact in
+   the framework. Don't skip steps to get to coding. Give "How a human verifies a phase" and the
+   hard constraints the most care: every phase's run sheet and rubric start from them.
+4. **Commit everything.** Tag it `framework-bootstrap` so you can find it later.
+
+**Without the plugin**, do the same by hand:
+- Copy `templates/CLAUDE.md`, `templates/PROJECT_OVERVIEW.md`, `templates/RETRO.md` and
+  `templates/DECISIONS.md` into the project root, and fill them in.
+- Create `specs/`, `specs/amendments/` and `reviews/phase_<N>/`. The full path table is in
+  `FACILITATOR.md`, "Review artifact paths".
 
 From here you choose your path.
 
@@ -36,8 +62,13 @@ From here you choose your path.
 **To start or resume work on a phase:**
 
 1. Open a Claude Code session in the project repo.
-2. Paste the contents of `templates/facilitator_bootstrap.md` as the first message.
-3. The Facilitator reads project state, determines what's next, and tells you. If there's already a `.facilitator/state.json` from a prior session, it picks up where you left off. If a previous session left `.facilitator/START_HERE.md`, you can paste that instead; it carries the locked decisions and open gate so the Facilitator does not have to rediscover them.
+2. Run `/spec-driven-build:facilitator`. Without the plugin, paste the body of
+   `skills/facilitator/SKILL.md` from your clone as the first message, with `${CLAUDE_PLUGIN_ROOT}`
+   replaced by the clone's path.
+3. The Facilitator reads project state, works out what's next, and tells you:
+   - With a `.facilitator/state.json` from a prior session, it picks up where you left off.
+   - With a `.facilitator/START_HERE.md` from a previous session, it reads that too. The file
+     carries the locked decisions and the open gate, so nothing has to be rediscovered.
 
 **To re-orient after a gap:**
 

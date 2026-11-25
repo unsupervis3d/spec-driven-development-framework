@@ -2,7 +2,7 @@
 
 The Facilitator is the orchestrator role for the spec-driven-build framework. It is not one of the seven agent roles that produce framework artifacts. It is the meta-role that *runs the framework*.
 
-This document specifies what the Facilitator is, what it does, what it does not do, and how it interacts with the other roles. It is the canonical reference; the bootstrap prompt at `templates/facilitator_bootstrap.md` is derived from it.
+This document specifies what the Facilitator is, what it does, what it does not do, and how it interacts with the other roles. It is the canonical reference; the Facilitator skill at `skills/facilitator/SKILL.md` (run as `/spec-driven-build:facilitator`) is derived from it.
 
 ---
 
@@ -379,7 +379,7 @@ The Facilitator maintains `.facilitator/state.json` in the project repo. Schema 
 
 ```json
 {
-  "framework_version": "0.3.1",
+  "framework_version": "0.4.0",
   "project_name": "Example Project",
   "delivery_mode": "github_pr",
   "gh_identity": "<github username, github_pr mode only>",

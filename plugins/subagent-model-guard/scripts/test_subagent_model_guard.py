@@ -166,6 +166,38 @@ class PluginAgents(unittest.TestCase):
     def test_reviewer_plugin_agent_on_build_model_is_denied(self):
         self.assertEqual(spawn(subagent_type="feature-dev:code-reviewer", model="sonnet")[0], "deny")
 
+    def test_plugin_agent_pin_is_found_through_installed_plugins(self):
+        plugins = os.path.join(_ISOLATED, "plugins")
+        install = os.path.join(_ISOLATED, "somewhere", "sdb")
+        os.makedirs(os.path.join(install, "agents"), exist_ok=True)
+        os.makedirs(plugins, exist_ok=True)
+        with open(os.path.join(install, "agents", "swe.md"), "w") as f:
+            f.write("---\nname: swe\nmodel: sonnet\n---\nbody\n")
+        with open(os.path.join(plugins, "installed_plugins.json"), "w") as f:
+            json.dump({"version": 2, "plugins": {"sdb@market": [{"scope": "user", "installPath": install}]}}, f)
+        try:
+            self.assertEqual(spawn(subagent_type="sdb:swe", description="SWE T-1")[0], "allow")
+            self.assertEqual(spawn(subagent_type="sdb:swe", model="opus", description="SWE T-1")[0], "deny")
+        finally:
+            os.remove(os.path.join(plugins, "installed_plugins.json"))
+
+    def test_plugin_agent_in_a_local_marketplace_is_found(self):
+        plugins = os.path.join(_ISOLATED, "plugins")
+        market = os.path.join(_ISOLATED, "market")
+        os.makedirs(os.path.join(market, ".claude-plugin"), exist_ok=True)
+        os.makedirs(os.path.join(market, "agents"), exist_ok=True)
+        os.makedirs(plugins, exist_ok=True)
+        with open(os.path.join(market, ".claude-plugin", "marketplace.json"), "w") as f:
+            json.dump({"name": "m", "owner": {"name": "x"}, "plugins": [{"name": "sdb", "source": "./"}]}, f)
+        with open(os.path.join(market, "agents", "pr-reviewer.md"), "w") as f:
+            f.write("---\nname: pr-reviewer\nmodel: opus\n---\nbody\n")
+        with open(os.path.join(plugins, "known_marketplaces.json"), "w") as f:
+            json.dump({"m": {"source": {"source": "directory", "path": market}, "installLocation": market}}, f)
+        try:
+            self.assertEqual(spawn(subagent_type="sdb:pr-reviewer", description="PR review T-1")[0], "allow")
+        finally:
+            os.remove(os.path.join(plugins, "known_marketplaces.json"))
+
     def test_architect_is_a_judge_and_simplifier_builds(self):
         policy = g.load_policy()
         self.assertEqual(g.role_from_name("feature-dev:code-architect", policy), "planner")

@@ -4,9 +4,9 @@
 > every phase boundary and whenever the human asks; the human pastes it to resume. Delete this
 > blockquote in the copy.
 >
-> **How to use:** open Claude Code in the project repo and paste **everything between the two `---`
-> rulers below** as your very first message. That single message turns the session into the
-> Facilitator and resumes the project.
+> **How to use:** with the plugin installed, run `/spec-driven-build:facilitator`. It reads this file
+> itself. Without the plugin, open Claude Code in the project repo and paste **everything between
+> the two `---` rulers below** as your very first message.
 >
 > **Staleness rule:** the Facilitator compares `Last refreshed` with the newest entry in
 > `.facilitator/log.md`. If the log is newer, it reads the log and `state.json` first and treats
@@ -25,7 +25,7 @@ standing authorization below allows), and you never issue or ratify a ruling.
 **Read these first, in order, then tell me where we are and what's next:**
 
 1. `<framework-path>/FACILITATOR.md` (your role, canonical) and
-   `<framework-path>/templates/facilitator_bootstrap.md`.
+   `<framework-path>/skills/facilitator/SKILL.md`.
 2. `<framework-path>/SPEC_DRIVEN_BUILD_FRAMEWORK.md`, `<framework-path>/HUMAN_GATES.md`,
    `<framework-path>/AGENT_ROSTER.md`, and everything under `<framework-path>/prompts/`.
 3. `.facilitator/carry_forward_phase_<N>.md` — the handoff from the previous phase's Facilitator.
@@ -38,7 +38,7 @@ standing authorization below allows), and you never issue or ratify a ruling.
 
 - Delivery mode: **<github_pr | local_branch>**. <If github_pr: the `gh` identity is `<identity>`;
   run `gh auth status` and confirm before any push or PR.>
-- Role install path: **<pasted prompts | .claude/agents/>**.
+- Roles: **<the plugin's agents (`spec-driven-build:<role>`) | local overrides in `.claude/agents/` for ...>**.
 - Locked decisions: <D-n (one line), D-m (one line), ...>. Cite them by ID; do not restate.
 - Amendments in force: <A-n (one line), ... | none>.
 - Standing authorization: <none | exact text from `state.json.standing_authorization`: the gates

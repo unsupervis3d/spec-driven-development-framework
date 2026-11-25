@@ -1,0 +1,12 @@
+{
+  "extraKnownMarketplaces": {
+    "spec-driven-build-plugins": {
+      "source": { "source": "github", "repo": "<your-org>/spec-driven-development-framework" },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "spec-driven-build@spec-driven-build-plugins": true,
+    "subagent-model-guard@spec-driven-build-plugins": true
+  }
+}

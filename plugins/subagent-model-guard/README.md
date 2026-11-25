@@ -10,14 +10,14 @@ In Claude Code:
 
 ```
 /plugin marketplace add <owner>/<repo>
-/plugin install subagent-model-guard@spec-driven-build
+/plugin install subagent-model-guard@spec-driven-build-plugins
 ```
 
 Or from a shell:
 
 ```
 claude plugin marketplace add <owner>/<repo>
-claude plugin install subagent-model-guard@spec-driven-build
+claude plugin install subagent-model-guard@spec-driven-build-plugins
 ```
 
 `<owner>/<repo>` is the GitHub repository you got this framework from, or your org's fork of it. A
@@ -28,18 +28,19 @@ To use it in a single session without installing: `claude --plugin-dir plugins/s
 
 ### Org rollout
 
-Put this in your managed settings (server-managed settings, MDM, or `managed-settings.json`):
+The full guide to making the framework an org standard is `ORG_ROLLOUT.md` at the repo root. For the
+guard alone, put this in your managed settings (server-managed settings, MDM, or `managed-settings.json`):
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "spec-driven-build": {
+    "spec-driven-build-plugins": {
       "source": { "source": "github", "repo": "<owner>/<repo>" },
       "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "subagent-model-guard@spec-driven-build": true
+    "subagent-model-guard@spec-driven-build-plugins": true
   }
 }
 ```
@@ -111,7 +112,7 @@ A layer only needs the keys it changes. Lists are replaced, and maps are merged 
 | `check_workflows` | Inspect `Workflow` scripts. |
 | `allow_env_disable` | Honour `SUBAGENT_MODEL_GUARD=off`. |
 
-Keep the role files' `model:` lines (`templates/agents/`) in step with the policy. A spawn that
+Keep the role agents' `model:` lines (the `spec-driven-build` plugin's `agents/`) in step with the policy. A spawn that
 relies on a pin outside its tier is denied, and the denial names the file.
 
 ## Logs and switches

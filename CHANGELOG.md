@@ -4,6 +4,50 @@ All notable changes to the spec-driven-build framework are documented here. The 
 
 ---
 
+## [0.4.0] — 2026-11-24
+
+The framework becomes a plugin. Until now everything but the guard was templates and documents: each project copied the role files, commands and bootstrap prompt, filled in placeholders, and kept its own copy. Those copies never received an update and drifted from the framework. Now one install gives every project the same, current framework, and an org can make it the default for everyone.
+
+### Added
+
+- **`spec-driven-build` plugin.** The repository root is the plugin:
+  - **`/spec-driven-build:new-project`** (`skills/new-project/`). The scoping interview, asked in rounds: what the project is and is not, its users, the core loop, how a human will verify each phase, the stack and hard constraints (pushed until they can be checked by a script), the phases, success criteria and delivery. It then creates `CLAUDE.md`, a draft `PROJECT_OVERVIEW.md`, `DECISIONS.md`, `RETRO.md`, `specs/` and `reviews/`, and the human approves the overview section by section before anything is built. Brownfield repos get a discovery pass instead of a from-memory description.
+  - **`/spec-driven-build:facilitator`** (`skills/facilitator/`). Starts or resumes the Facilitator. It replaces pasting `templates/facilitator_bootstrap.md`, and it spawns roles as `spec-driven-build:<role>` with the model passed explicitly.
+  - **Seven role agents** (`agents/`), each pinned to its tier's model and reading its template from the plugin's `prompts/`. Project specifics come from the project's `CLAUDE.md`, not from per-project copies of the role files.
+  - **`/spec-driven-build:ticket`, `/spec-driven-build:review`, `/spec-driven-build:ticket-status`.** The lightweight commands, with per-repo settings in a "Lightweight settings" section of `CLAUDE.md`.
+  - **Session-start kickoff** (`hooks/session_start.py`). Offers the interview in an empty or near-empty repo, and points a framework repo at its Facilitator with the current phase and state. It says nothing in other repos. `SPEC_DRIVEN_BUILD_KICKOFF=off` disables it.
+- **`ORG_ROLLOUT.md`.** How to make the framework an org standard, in five layers: a fork you control, managed settings that install both plugins for everyone, a managed `CLAUDE.md` that states the standard, the kickoff, and enforcement through gates, run sheets and the guard. It says plainly what this cannot force.
+- **`templates/org/`.** The managed settings block, the managed `CLAUDE.md`, and the locked guard policy.
+
+### Changed
+
+- **Marketplace renamed** from `spec-driven-build` to `spec-driven-build-plugins`, so the framework plugin installs as `spec-driven-build@spec-driven-build-plugins`.
+- **The guard finds plugin agent definitions** through Claude Code's install records, including local-directory marketplaces, so a plugin role agent's `model:` pin counts.
+- **`templates/CLAUDE.md`** records commands, constraint scripts and lightweight settings, which the role agents read in place of placeholders.
+- **Removed `templates/agents/`, `templates/commands/` and `templates/facilitator_bootstrap.md`.** They are superseded by `agents/`, `skills/` and `skills/facilitator/`. Without the plugin, paste `skills/facilitator/SKILL.md` with `${CLAUDE_PLUGIN_ROOT}` replaced by your clone's path.
+- **The Facilitator skill no longer hardcodes the framework's location** (it used `~/projects/spec-driven-development-framework/`). It reads everything from the plugin.
+
+### Design rationale
+
+Packaging the guard alone left the most important property unenforced: every project drifting on its own copy. A plugin makes the framework a single versioned artifact. An org pins it in a fork and moves projects forward by bumping a version, not by asking each team to re-copy files.
+
+The kickoff hook is deliberately quiet. It speaks only where the framework clearly applies: an empty repo, or a repo that already uses the framework. A standard that interrupts every bug fix in every legacy repo gets switched off.
+
+Making the scoping interview a skill, with an approval gate at the end, puts the highest-leverage step at the start of every project, where it costs least. Nobody has to remember the questions, and the questions that matter most can't be skipped: how a human will verify each phase, and hard constraints that can be checked.
+
+### Migration from 0.3.1
+
+1. Re-add the marketplace under its new name and install both plugins:
+   - `claude plugin marketplace remove spec-driven-build`
+   - `claude plugin marketplace add <owner>/<repo>`
+   - `claude plugin install spec-driven-build@spec-driven-build-plugins`
+   - `claude plugin install subagent-model-guard@spec-driven-build-plugins`
+2. In existing projects, start the Facilitator with `/spec-driven-build:facilitator` in place of the pasted bootstrap.
+3. Copied role files in `.claude/agents/` become local overrides. Delete them to use the plugin's agents, or keep them and say so in `CLAUDE.md`.
+4. Move each project's fills (test commands, constraint scripts, lightweight placeholders) into `CLAUDE.md` per `templates/CLAUDE.md`.
+
+---
+
 ## [0.3.1] — 2026-11-24
 
 Enforcement of the role-to-model split. Until now the split was a recommendation, and usage data showed it being ignored.

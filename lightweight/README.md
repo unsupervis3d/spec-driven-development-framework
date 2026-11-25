@@ -1,4 +1,4 @@
-<!-- framework-version: 0.3.1 -->
+<!-- framework-version: 0.4.0 -->
 <!-- file-role: lightweight-readme -->
 
 # Lightweight Adaptations
@@ -11,7 +11,7 @@ This directory holds *lightweight adaptations* of the framework — pared-down v
 
 ## When to use what
 
-- **Full framework** — multi-phase projects, especially greenfield. You own the product definition. Use the Facilitator from day one. See `~/projects/spec-driven-development-framework/README.md`.
+- **Full framework** — multi-phase projects, especially greenfield. You own the product definition. Use the Facilitator from day one. See `../README.md`.
 - **Lightweight (ticket-scale)** — ticket-driven work in an existing codebase with a PM who writes thorough tickets and a team that does social PR review. The pattern in `TICKET_SCALE_PATTERN.md` is the reference instance. See `lightweight/README.md` (this file) for the shared design and `TICKET_SCALE_PATTERN.md` for the worked example.
 - **Nothing** — bug fixes that take an hour, weekend hacks, throwaway exploration. Framework overhead is not justified. Just write the code.
 
@@ -33,7 +33,7 @@ The pattern, regardless of specific instance:
 
 ## Slash commands
 
-`templates/commands/` in the framework repo holds generic `/ticket`, `/review` and `/ticket-status` command files that wrap these prompts. A project copies them into its `.claude/commands/`, fills the placeholders (how to fetch a work unit, where the constraints file lives, how to link a PR to a ticket), and gets the whole implement → cold-review → human gate → PR → CI-monitor flow as one command.
+The `spec-driven-build` plugin ships `/spec-driven-build:ticket`, `/spec-driven-build:review` and `/spec-driven-build:ticket-status`, which wrap these prompts (`skills/` in the framework repo). A project records its specifics (how to fetch a work unit, where the constraints file lives, how to link a PR to a ticket) in the "Lightweight settings" section of its `CLAUDE.md`, and gets the whole implement → cold-review → human gate → PR → CI-monitor flow as one command.
 
 The implementer's testing steps are the lightweight pattern's equivalent of the full framework's run sheet: the human walks them, against a running instance, before the PR is created. Always. Even when CI is green — CI proves the tests pass, not that the feature works when a person uses it.
 

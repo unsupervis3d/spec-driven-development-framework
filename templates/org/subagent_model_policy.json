@@ -1,0 +1,4 @@
+{
+  "_comment": "Org policy for the subagent model guard. Deploy to the managed-settings directory (macOS /Library/Application Support/ClaudeCode/, Linux /etc/claude-code/, Windows C:\\Program Files\\ClaudeCode\\). It overrides the plugin's defaults and any user policy. Add only the keys you change.",
+  "allow_env_disable": false
+}

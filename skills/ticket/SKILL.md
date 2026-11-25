@@ -1,16 +1,23 @@
 ---
-description: Implement → cold-context review → human gate → PR → CI monitor, for one work unit (lightweight pattern)
-argument-hint: <work-unit-id>
+name: ticket
+description: Run the lightweight spec-driven-build loop for one work unit: implement, cold-context review, human gate on testing steps, PR, CI monitor. Use for ticket-scale work in an existing codebase.
+argument-hint: "<work-unit-id>"
+disable-model-invocation: true
 ---
 
-Run the lightweight spec-driven-build workflow for work unit **$1**. The canonical subagent prompts
-live at `<framework-path>/lightweight/prompts/` (or this repo's forked copies under
-`.claude/prompts/`); read each one fresh at the moment you spawn that phase's subagent so the prompt
+**Settings.** Values in angle brackets below (`<HOW_TO_FETCH_WORK>`, `<CONSTRAINTS_FILE>`, ...) come
+from the "Lightweight settings" section of the project's `CLAUDE.md`. If that section or a key is
+missing, ask the human for the value once, offer to add it to `CLAUDE.md`, and don't guess. The
+section's format is in `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md`.
+
+Run the lightweight spec-driven-build workflow for work unit **$ARGUMENTS**. The canonical subagent prompts
+live at `${CLAUDE_PLUGIN_ROOT}/lightweight/prompts/` (or this repo's forked copies under
+`.claude/prompts/`, if `CLAUDE.md` says to use them); read each one fresh at the moment you spawn that phase's subagent so the prompt
 files stay the single source of truth.
 
 ## 1. Implementer phase
-Spawn a subagent with the contents of `ticket_implementer.md` as its prompt, with `$1` filled in.
-The implementer fetches the work unit (`<HOW_TO_FETCH_WORK, e.g. gh issue view $1>`), reads any
+Spawn a subagent with the contents of `ticket_implementer.md` as its prompt, with `$ARGUMENTS` filled in.
+The implementer fetches the work unit (`<HOW_TO_FETCH_WORK, e.g. gh issue view $ARGUMENTS>`), reads any
 notes at `<NOTES_LOCATION>`, reads the constraints in `<CONSTRAINTS_FILE>`, does a size scan (stops
 and recommends escalate-or-split if too big), writes failing tests, implements to green, writes the
 draft change description with numbered human testing steps to `<DRAFT_PATH, e.g.
@@ -33,7 +40,7 @@ proceed on "looks fine"; ask for the result of the walk.
 
 ## 5. On human approval
 Create the PR via `gh pr create` with the draft as the description. Link it to the work unit via
-`<TICKET_LINK_COMMAND, e.g. .claude/scripts/ticket_link.sh $1 <pr-number>>`. Delete `<DRAFT_PATH>`.
+`<TICKET_LINK_COMMAND, e.g. .claude/scripts/ticket_link.sh $ARGUMENTS <pr-number>>`. Delete `<DRAFT_PATH>`.
 Write `<STATE_FILE, e.g. .claude/in_flight.json>` to record the new PR.
 
 ## 6. CI monitor phase
@@ -43,3 +50,7 @@ and updates `<STATE_FILE>` as state changes.
 
 Honor every constraint in `<CONSTRAINTS_FILE>` throughout. Follow the branch and PR conventions in
 `CLAUDE.md`. Never commit directly to the default branch.
+
+Spawn every subagent with an explicit `model`: the implementer and CI monitor on the build tier
+(`sonnet`), the reviewer on the judge tier (`opus`). The subagent model guard denies spawns that
+don't.

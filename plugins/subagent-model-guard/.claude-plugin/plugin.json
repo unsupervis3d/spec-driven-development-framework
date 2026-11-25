@@ -1,7 +1,7 @@
 {
   "name": "subagent-model-guard",
   "displayName": "Subagent Model Guard",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Denies any subagent spawn or Workflow agent that would run on the wrong model for its role (writers on the build tier, reviewers and planners on the judge tier), and audits the model each one actually started on.",
   "author": { "name": "spec-driven-build framework" },
   "license": "MIT",

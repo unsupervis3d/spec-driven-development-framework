@@ -1,0 +1,18 @@
+{
+  "description": "spec-driven-build kickoff: at session start, point Claude at the Facilitator in framework projects and offer the new-project interview in empty repos.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

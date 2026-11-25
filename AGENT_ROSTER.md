@@ -18,7 +18,7 @@ In practice this means:
 - The worker roles remain unchanged from earlier framework versions. Their responsibilities, boundaries, and outputs are defined here, not in `FACILITATOR.md`.
 - Each worker role's prompt template now includes a **structured output section** (YAML) that the Facilitator parses. The structured output is in addition to, not a replacement for, the prose deliverables.
 - A worker role can still be invoked manually (paste the prompt into a fresh Claude Code session) for cases where the Facilitator is unavailable or unhelpful. The structured output section is harmless when read by humans.
-- Roles can be installed two ways: as pasted prompts (`prompts/<role>.md`, filled in per invocation) or as Claude Code subagent definitions under the project's `.claude/agents/` (one short file per role, generated from `templates/agents/`). The second is lighter and spawnable natively; both carry the same structured output.
+- Roles ship as agents in the `spec-driven-build` plugin (`agents/<role>.md`, spawned as `spec-driven-build:<role>`, each pinned to its tier's model and reading its template from `prompts/`). Without the plugin, a role can still be run from its pasted prompt (`prompts/<role>.md`, filled in per invocation). Both carry the same structured output.
 - Every role runs under the subagent operating rules in `FACILITATOR.md`: one file or command per tool call, no git mutations, reviewers don't read `reviews/` or `RETRO.md`, kill only your own PIDs, end with the structured block.
 
 The Facilitator does not change *what* the worker roles do. It changes *who keeps track of which one runs when*. Read on for the seven worker roles.

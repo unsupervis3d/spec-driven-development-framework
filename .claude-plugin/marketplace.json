@@ -1,8 +1,13 @@
 {
-  "name": "spec-driven-build",
+  "name": "spec-driven-build-plugins",
   "description": "Claude Code plugins for the spec-driven-build framework.",
   "owner": { "name": "spec-driven-build framework" },
   "plugins": [
+    {
+      "name": "spec-driven-build",
+      "source": "./",
+      "description": "The framework: new-project interview, Facilitator, seven model-pinned worker roles, lightweight ticket commands."
+    },
     {
       "name": "subagent-model-guard",
       "source": "./plugins/subagent-model-guard",

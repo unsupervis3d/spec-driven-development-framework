@@ -286,14 +286,50 @@ def walk_up(start, *parts):
         d = parent
 
 
+def _load_json(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def plugin_roots(plugin):
+    """Candidate install directories for a plugin, most authoritative first.
+
+    Claude Code records each install in plugins/installed_plugins.json. Directory-sourced
+    marketplaces (a local clone) may load the plugin in place, so their source paths are checked
+    too, and the version cache is the last resort.
+    """
+    roots = []
+    for d in config_dirs():
+        base = os.path.join(d, "plugins")
+        installed = (_load_json(os.path.join(base, "installed_plugins.json")) or {}).get("plugins", {})
+        for key, entries in installed.items():
+            if key.split("@", 1)[0] == plugin:
+                for entry in entries if isinstance(entries, list) else [entries]:
+                    if isinstance(entry, dict) and entry.get("installPath"):
+                        roots.append(entry["installPath"])
+        for market in (_load_json(os.path.join(base, "known_marketplaces.json")) or {}).values():
+            location = isinstance(market, dict) and market.get("installLocation")
+            catalog = location and _load_json(os.path.join(location, ".claude-plugin", "marketplace.json"))
+            for item in (catalog or {}).get("plugins", []):
+                source = item.get("source")
+                if item.get("name") == plugin and isinstance(source, str) and source.startswith("./"):
+                    roots.append(os.path.normpath(os.path.join(location, source)))
+        roots.extend(sorted(glob.glob(os.path.join(base, "cache", "*", plugin, "*")),
+                            key=os.path.getmtime, reverse=True))
+    return [r for i, r in enumerate(roots) if r not in roots[:i]]
+
+
 def find_definition(agent_name, cwd):
     """Return the definition file for a named agent, or None."""
     if ":" in agent_name:
         plugin, agent = agent_name.split(":", 1)
-        for d in config_dirs():
-            hits = glob.glob(os.path.join(d, "plugins", "cache", "*", plugin, "*", "agents", agent + ".md"))
-            if hits:
-                return sorted(hits, key=os.path.getmtime)[-1]
+        for root in plugin_roots(plugin):
+            candidate = os.path.join(root, "agents", agent + ".md")
+            if os.path.exists(candidate):
+                return candidate
         return None
     found = walk_up(cwd, ".claude", "agents", agent_name + ".md")
     if found:
